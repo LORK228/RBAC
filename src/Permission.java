@@ -1,5 +1,4 @@
 public record Permission(String name, String resource, String description) {
-    // canonical (compact) constructor
     public Permission {
         if (name == null) {
             throw new IllegalArgumentException("name must not be null");
@@ -31,22 +30,10 @@ public record Permission(String name, String resource, String description) {
         }
     }
 
-    /**
-     * Формат: "READ on users: Description text"
-     */
     public String format() {
         return name + " on " + resource + ": " + description;
     }
 
-    /**
-     * Поиск по шаблонам. Реализовано через contains() на уже нормализованных полях.
-     * - Если namePattern == null -> игнорируется (совпадает по любому имени)
-     * - Если resourcePattern == null -> игнорируется (совпадает по любому ресурсу)
-     *
-     * Примеры:
-     *   matches("READ", "user") -> true если name содержит "READ" и resource содержит "user"
-     *   matches("REA", null) -> true если name содержит "REA" (resource не проверяется)
-     */
     public boolean matches(String namePattern, String resourcePattern)
     {
         if (namePattern != null)
