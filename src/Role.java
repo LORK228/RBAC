@@ -11,7 +11,6 @@ public class Role
     private String description;
     private Set<Permission> permissions;
 
-    // Конструктор с параметрами
     public Role(String name, String description)
     {
         this.id = "role_" + UUID.randomUUID().toString();
@@ -20,13 +19,11 @@ public class Role
         this.permissions = new HashSet<>();
     }
 
-    // Конструктор по умолчанию
     public Role()
     {
         this("", "");
     }
 
-    // Геттеры
     public String getId() {
         return id;
     }
