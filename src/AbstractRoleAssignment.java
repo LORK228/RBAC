@@ -21,7 +21,6 @@ public abstract class AbstractRoleAssignment implements RoleAssignment {
         this.metadata = metadata;
     }
 
-    // ==================== Геттеры ====================
 
     @Override
     public String assignmentId() {
@@ -66,7 +65,6 @@ public abstract class AbstractRoleAssignment implements RoleAssignment {
     public String summary() {
         StringBuilder sb = new StringBuilder();
 
-        // Строка 1: [ТИП] роль назначена пользователю admin в дату
         String assignedAtFormatted = formatAssignedAt(metadata.assignedAt());
         sb.append(String.format("[%s] %s assigned to %s by %s at %s\n",
                 assignmentType(),
@@ -75,13 +73,11 @@ public abstract class AbstractRoleAssignment implements RoleAssignment {
                 metadata.assignedBy(),
                 assignedAtFormatted));
 
-        // Строка 2: Причина назначения
         String reasonStr = metadata.reason() != null && !metadata.reason().isEmpty()
                 ? metadata.reason()
                 : "No reason provided";
         sb.append(String.format("Reason: %s\n", reasonStr));
 
-        // Строка 3: Статус
         String status = isActive() ? "ACTIVE" : "INACTIVE";
         sb.append(String.format("Status: %s", status));
 
@@ -95,7 +91,6 @@ public abstract class AbstractRoleAssignment implements RoleAssignment {
             LocalDateTime dateTime = LocalDateTime.parse(isoDateTime, isoFormatter);
             return dateTime.format(readableFormatter);
         } catch (Exception e) {
-            // Если парсинг не удался, возвращаем как есть
             return isoDateTime;
         }
     }
