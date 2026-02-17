@@ -94,34 +94,22 @@ public class TemporaryAssignment extends AbstractRoleAssignment {
         this.expiresAt = expiresAt.plusHours(hours);
     }
 
-    /**
-     * Возвращает общее количество полных дней между сейчас и expiresAt (может быть отрицательным)
-     */
     public long getRemainingDays() {
         Duration d = Duration.between(LocalDateTime.now(), expiresAt);
         return d.isNegative() ? -1 : d.toDays();
     }
 
-    /**
-     * Возвращает общее количество полных часов между сейчас и expiresAt (может быть отрицательным)
-     */
     public long getRemainingHours() {
         Duration d = Duration.between(LocalDateTime.now(), expiresAt);
         return d.isNegative() ? -1 : d.toHours();
     }
 
-    /**
-     * Возвращает общее количество полных минут между сейчас и expiresAt (может быть отрицательным)
-     */
+    
     public long getRemainingMinutes() {
         Duration d = Duration.between(LocalDateTime.now(), expiresAt);
         return d.isNegative() ? -1 : d.toMinutes();
     }
 
-    /**
-     * Возвращает читаемую строку оставшегося времени, рассчитанную из одного Duration snapshot.
-     * Примеры: "5 days 2 hours", "2 hours 15 minutes", "30 minutes", "EXPIRED"
-     */
     public String getTimeRemaining() {
         LocalDateTime now = LocalDateTime.now();
         Duration d = Duration.between(now, expiresAt);
@@ -147,7 +135,6 @@ public class TemporaryAssignment extends AbstractRoleAssignment {
     public String summary() {
         StringBuilder sb = new StringBuilder();
 
-        // единый снимок "now" для всей summary — чтобы все значения были согласованы
         LocalDateTime now = LocalDateTime.now();
         String assignedAtFormatted = formatDateTime(metadata.assignedAt());
         sb.append(String.format("[%s] %s assigned to %s by %s at %s\n",
@@ -162,7 +149,6 @@ public class TemporaryAssignment extends AbstractRoleAssignment {
                 : "No reason provided";
         sb.append(String.format("Reason: %s\n", reasonStr));
 
-        // используем единый snapshot now для вычисления оставшегося времени
         Duration d = Duration.between(now, expiresAt);
         String expiresAtFormatted = formatDateTime(expiresAt);
         String timeRemaining;
