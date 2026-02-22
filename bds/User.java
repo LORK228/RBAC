@@ -15,13 +15,11 @@ public record User(String username, String fullName, String email) {
         }
 
         int at = email.indexOf('@');
-        if (at <= 0) {
-            throw new IllegalArgumentException("email must contain '@' and have non-empty local part");
-        }
+        if (at <= 0) throw new IllegalArgumentException("email must contain '@' and have non-empty local part");
+
         int dotAfterAt = email.indexOf('.', at + 1);
-        if (dotAfterAt <= at + 1) {
-            throw new IllegalArgumentException("email must contain a '.' after '@' (e.g. user@example.com)");
-        }
+        if (dotAfterAt <= at + 1) throw new IllegalArgumentException("email must contain a '.' after '@' (e.g. user@example.com)");
+
         return new User(username, fullName, email);
     }
     public String format()

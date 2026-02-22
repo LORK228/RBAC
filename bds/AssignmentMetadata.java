@@ -30,9 +30,4 @@ public record AssignmentMetadata(String assignedBy, String assignedAt, String re
         return String.format("Assigned by: %s at %s | Reason: %s",
                 assignedBy, assignedAt, reasonStr);
     }
-
-    @Override
-    public String toString() {
-        return String.format("[%s by %s]", assignedAt, assignedBy);
-    }
 }
