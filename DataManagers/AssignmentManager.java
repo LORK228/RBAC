@@ -1,17 +1,14 @@
 import java.util.*;
 import java.util.stream.Collectors;
 
-
-public class AssignmentManager implements Repository<RoleAssignment>
-{
+public class AssignmentManager implements Repository<RoleAssignment> {
 
     private final Map<String, RoleAssignment> assignmentsById = new HashMap<>();
 
     private final UserManager userManager;
     private final RoleManager roleManager;
 
-    public AssignmentManager(UserManager userManager, RoleManager roleManager)
-    {
+    public AssignmentManager(UserManager userManager, RoleManager roleManager) {
         if (userManager == null) throw new IllegalArgumentException("UserManager cannot be null");
         if (roleManager == null) throw new IllegalArgumentException("RoleManager cannot be null");
         this.userManager = userManager;
@@ -19,24 +16,22 @@ public class AssignmentManager implements Repository<RoleAssignment>
     }
 
     @Override
-    public void add(RoleAssignment item)
-    {
+    public void add(RoleAssignment item) {
         if (item == null) throw new IllegalArgumentException("RoleAssignment cannot be null");
-
-        // Проверить, что идентификатор уникален в хранилище
         if (item.assignmentId() == null || item.assignmentId().isEmpty())
             throw new IllegalArgumentException("Assignment must have a non-empty ID");
 
         if (assignmentsById.containsKey(item.assignmentId()))
             throw new IllegalArgumentException("Assignment with ID '" + item.assignmentId() + "' already exists");
 
-        // Проверить существование пользователя и роли в соответствующих менеджерах
+        // Проверяем существование пользователя и роли в соответствующих менеджерах
         if (!userManager.exists(item.user().username()))
             throw new IllegalArgumentException("User '" + item.user().username() + "' does not exist");
 
         if (!roleManager.findById(item.role().getId()).isPresent())
             throw new IllegalArgumentException("Role with ID '" + item.role().getId() + "' does not exist");
 
+        // Не допускаем, чтобы одна роль была назначена пользователю дважды одновременно (активно)
         boolean duplicateActive = assignmentsById.values().stream()
                 .anyMatch(a ->
                         a.user().username().equals(item.user().username())
@@ -45,46 +40,41 @@ public class AssignmentManager implements Repository<RoleAssignment>
                 );
 
         if (duplicateActive)
-        {
             throw new IllegalArgumentException(String.format(
                     "User '%s' already has an active assignment for role '%s'",
                     item.user().username(), item.role().getName()));
-        }
 
         assignmentsById.put(item.assignmentId(), item);
     }
 
     @Override
-    public boolean remove(RoleAssignment item)
-    {
+    public boolean remove(RoleAssignment item) {
         if (item == null) return false;
         return assignmentsById.remove(item.assignmentId()) != null;
     }
 
     @Override
-    public Optional<RoleAssignment> findById(String id)
-    {
+    public Optional<RoleAssignment> findById(String id) {
         if (id == null || id.isEmpty()) return Optional.empty();
         return Optional.ofNullable(assignmentsById.get(id));
     }
 
     @Override
-    public List<RoleAssignment> findAll()
-    {
+    public List<RoleAssignment> findAll() {
         return new ArrayList<>(assignmentsById.values());
     }
 
     @Override
-    public int count()
-    {
+    public int count() {
         return assignmentsById.size();
     }
 
     @Override
-    public void clear()
-    {
+    public void clear() {
         assignmentsById.clear();
     }
+
+    // --- Additional required methods ---
 
     public List<RoleAssignment> findByUser(User user) {
         if (user == null) return Collections.emptyList();
@@ -109,8 +99,9 @@ public class AssignmentManager implements Repository<RoleAssignment>
 
     public List<RoleAssignment> findAll(AssignmentFilter filter, Comparator<RoleAssignment> sorter) {
         return assignmentsById.values().stream()
-                .filter(filter::test)
-                .sorted(sorter)
+                .filter(a -> filter == null || filter.test(a))
+                // безопасно применяем сортировку только если sorter != null
+                .sorted(sorter != null ? sorter : Comparator.comparing(RoleAssignment::assignmentId))
                 .collect(Collectors.toList());
     }
 
@@ -121,6 +112,7 @@ public class AssignmentManager implements Repository<RoleAssignment>
     }
 
     public List<RoleAssignment> getExpiredAssignments() {
+        // используем TemporaryAssignment::isExpired для явности
         return assignmentsById.values().stream()
                 .filter(a -> a instanceof TemporaryAssignment)
                 .map(a -> (TemporaryAssignment) a)
@@ -134,6 +126,7 @@ public class AssignmentManager implements Repository<RoleAssignment>
                 .anyMatch(a ->
                         a.user().username().equals(user.username())
                                 && a.role().getId().equals(role.getId())
+                                && a.isActive()
                 );
     }
 

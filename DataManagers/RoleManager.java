@@ -48,9 +48,11 @@ public class RoleManager implements Repository<Role>
 
         if (assignmentManager != null)
         {
-            List<RoleAssignment> activeAssignments = assignmentManager.getActiveAssignmentsForRole(item);
+            List<RoleAssignment> assignmentsForRole = assignmentManager.findByRole(item);
+            boolean hasActive = assignmentsForRole != null && assignmentsForRole.stream()
+                    .anyMatch(RoleAssignment::isActive);
 
-            if (activeAssignments != null && !activeAssignments.isEmpty())
+            if (hasActive)
             {
                 throw new IllegalArgumentException(
                         "Cannot remove role '" + item.getName() + "' because it is assigned to users");
@@ -65,6 +67,7 @@ public class RoleManager implements Repository<Role>
 
         return removed;
     }
+
 
     @Override
     public Optional<Role> findById(String id)
