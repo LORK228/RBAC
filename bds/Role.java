@@ -53,9 +53,18 @@ public class Role
 
     public boolean hasPermission(String permissionName, String resource)
     {
+        if (permissionName == null || resource == null) {
+            return false;
+        }
+        String normalizedName = permissionName.trim().toUpperCase();
+        String normalizedResource = resource.trim().toLowerCase();
+        if (normalizedName.isEmpty() || normalizedResource.isEmpty()) {
+            return false;
+        }
+
         return permissions
                 .stream()
-                .anyMatch(x -> x.name().equals(permissionName) && x.resource().equals(resource));
+                .anyMatch(x -> x.name().equals(normalizedName) && x.resource().equals(normalizedResource));
     }
 
     public Set<Permission> getPermissions()
