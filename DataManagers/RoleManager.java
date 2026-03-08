@@ -8,20 +8,37 @@ public class RoleManager implements Repository<Role>
     private Map<String, Role> rolesByName = new HashMap<>();
 
     private AssignmentManager assignmentManager;
+    private AuditLog auditLog;
 
     public RoleManager()
     {
-        this.assignmentManager = null;
+        this(null, null);
+    }
+
+    public RoleManager(AuditLog auditLog)
+    {
+        this(null, auditLog);
     }
 
     public RoleManager(AssignmentManager assignmentManager)
     {
+        this(assignmentManager, null);
+    }
+
+    public RoleManager(AssignmentManager assignmentManager, AuditLog auditLog)
+    {
         this.assignmentManager = assignmentManager;
+        this.auditLog = auditLog;
     }
 
     public void setAssignmentManager(AssignmentManager assignmentManager)
     {
         this.assignmentManager = assignmentManager;
+    }
+
+    public void setAuditLog(AuditLog auditLog)
+    {
+        this.auditLog = auditLog;
     }
 
     @Override
@@ -38,6 +55,10 @@ public class RoleManager implements Repository<Role>
 
         rolesById.put(item.getId(), item);
         rolesByName.put(item.getName(), item);
+        if (auditLog != null) {
+            auditLog.log("CREATE_ROLE", "system", item.getName(),
+                    "Role created with id " + item.getId());
+        }
     }
 
     @Override
@@ -63,6 +84,10 @@ public class RoleManager implements Repository<Role>
         if (removed)
         {
             rolesByName.remove(item.getName());
+            if (auditLog != null) {
+                auditLog.log("DELETE_ROLE", "system", item.getName(),
+                        "Role deleted with id " + item.getId());
+            }
         }
 
         return removed;

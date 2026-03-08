@@ -7,12 +7,22 @@ public class AssignmentManager implements Repository<RoleAssignment> {
 
     private final UserManager userManager;
     private final RoleManager roleManager;
+    private AuditLog auditLog;
 
     public AssignmentManager(UserManager userManager, RoleManager roleManager) {
+        this(userManager, roleManager, null);
+    }
+
+    public AssignmentManager(UserManager userManager, RoleManager roleManager, AuditLog auditLog) {
         if (userManager == null) throw new IllegalArgumentException("UserManager cannot be null");
         if (roleManager == null) throw new IllegalArgumentException("RoleManager cannot be null");
         this.userManager = userManager;
         this.roleManager = roleManager;
+        this.auditLog = auditLog;
+    }
+
+    public void setAuditLog(AuditLog auditLog) {
+        this.auditLog = auditLog;
     }
 
     @Override
@@ -44,6 +54,11 @@ public class AssignmentManager implements Repository<RoleAssignment> {
                     item.user().username(), item.role().getName()));
 
         assignmentsById.put(item.assignmentId(), item);
+        if (auditLog != null) {
+            auditLog.log("ASSIGN_ROLE", item.metadata().assignedBy(), item.assignmentId(),
+                    String.format("Role '%s' assigned to user '%s'",
+                            item.role().getName(), item.user().username()));
+        }
     }
 
     @Override
@@ -162,6 +177,12 @@ public class AssignmentManager implements Repository<RoleAssignment> {
             ((PermanentAssignment) assignment).revoke();
         } else {
             assignmentsById.remove(assignmentId);
+        }
+
+        if (auditLog != null) {
+            auditLog.log("REVOKE_ROLE", "system", assignmentId,
+                    String.format("Role '%s' revoked from user '%s'",
+                            assignment.role().getName(), assignment.user().username()));
         }
     }
 

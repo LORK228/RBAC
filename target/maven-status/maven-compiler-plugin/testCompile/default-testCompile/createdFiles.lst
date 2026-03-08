@@ -1,4 +1,5 @@
 AssignmentManagerTest.class
+AuditLogTest.class
 UserManagerTest.class
 TestDataFactory.class
 RoleManagerTest.class

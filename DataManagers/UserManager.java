@@ -4,6 +4,19 @@ import java.util.stream.Collectors;
 public class UserManager implements Repository<User>
 {
     private Map<String, User> users = new HashMap<>();
+    private AuditLog auditLog;
+
+    public UserManager() {
+        this(null);
+    }
+
+    public UserManager(AuditLog auditLog) {
+        this.auditLog = auditLog;
+    }
+
+    public void setAuditLog(AuditLog auditLog) {
+        this.auditLog = auditLog;
+    }
 
     @Override
     public void add(User user)
@@ -20,6 +33,10 @@ public class UserManager implements Repository<User>
             throw new IllegalArgumentException("User with email '" + validatedUser.email() + "' already exists");
 
         users.put(validatedUser.username(), validatedUser);
+        if (auditLog != null) {
+            auditLog.log("CREATE_USER", "system", validatedUser.username(),
+                    "User created with email " + validatedUser.email());
+        }
     }
 
     @Override
@@ -28,7 +45,11 @@ public class UserManager implements Repository<User>
         if (user == null)
             return false;
 
-        return users.remove(user.username()) != null;
+        boolean removed = users.remove(user.username()) != null;
+        if (removed && auditLog != null) {
+            auditLog.log("DELETE_USER", "system", user.username(), "User deleted");
+        }
+        return removed;
     }
 
     @Override

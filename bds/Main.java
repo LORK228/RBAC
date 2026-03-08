@@ -1,119 +1,128 @@
-import java.time.LocalDateTime;
+import java.util.Optional;
+import java.util.Scanner;
 
 public class Main {
     public static void main(String[] args) {
-        System.out.println("=== User Validation Tests ===\n");
+        AuditLog auditLog = new AuditLog();
+        UserManager userManager = new UserManager(auditLog);
+        RoleManager roleManager = new RoleManager(auditLog);
+        AssignmentManager assignmentManager = new AssignmentManager(userManager, roleManager, auditLog);
+        roleManager.setAssignmentManager(assignmentManager);
 
-        try {
-            var u = User.validate("john_doe", "John Doe", "john.doe@example.com");
-            System.out.println("Created user: " + u);
-            System.out.println(u.format());
-        } catch (IllegalArgumentException ex) {
-            System.out.println("Validation failed for valid user: " + ex.getMessage());
+        Scanner scanner = new Scanner(System.in);
+        printHelp();
+
+        while (true) {
+            System.out.print("> ");
+            String line = scanner.nextLine();
+            if (line == null) {
+                break;
+            }
+            String trimmed = line.trim();
+            if (trimmed.isEmpty()) {
+                continue;
+            }
+
+            String[] parts = trimmed.split("\\s+");
+            String command = parts[0];
+
+            try {
+                switch (command) {
+                    case "create-user" -> {
+                        if (parts.length < 4) {
+                            System.out.println("Usage: create-user <username> <fullName> <email>");
+                            continue;
+                        }
+                        User user = User.validate(parts[1], parts[2], parts[3]);
+                        userManager.add(user);
+                        System.out.println("User created: " + user.username());
+                    }
+                    case "delete-user" -> {
+                        if (parts.length < 2) {
+                            System.out.println("Usage: delete-user <username>");
+                            continue;
+                        }
+                        Optional<User> userOpt = userManager.findByUsername(parts[1]);
+                        if (userOpt.isEmpty()) {
+                            System.out.println("User not found");
+                            continue;
+                        }
+                        boolean removed = userManager.remove(userOpt.get());
+                        System.out.println(removed ? "User deleted" : "User not deleted");
+                    }
+                    case "create-role" -> {
+                        if (parts.length < 3) {
+                            System.out.println("Usage: create-role <name> <description>");
+                            continue;
+                        }
+                        Role role = new Role(parts[1], parts[2]);
+                        roleManager.add(role);
+                        System.out.println("Role created: " + role.getName());
+                    }
+                    case "delete-role" -> {
+                        if (parts.length < 2) {
+                            System.out.println("Usage: delete-role <roleName>");
+                            continue;
+                        }
+                        Optional<Role> roleOpt = roleManager.findByName(parts[1]);
+                        if (roleOpt.isEmpty()) {
+                            System.out.println("Role not found");
+                            continue;
+                        }
+                        boolean removed = roleManager.remove(roleOpt.get());
+                        System.out.println(removed ? "Role deleted" : "Role not deleted");
+                    }
+                    case "assign-role" -> {
+                        if (parts.length < 4) {
+                            System.out.println("Usage: assign-role <username> <roleName> <assignedBy>");
+                            continue;
+                        }
+                        Optional<User> userOpt = userManager.findByUsername(parts[1]);
+                        Optional<Role> roleOpt = roleManager.findByName(parts[2]);
+                        if (userOpt.isEmpty()) {
+                            System.out.println("User not found");
+                            continue;
+                        }
+                        if (roleOpt.isEmpty()) {
+                            System.out.println("Role not found");
+                            continue;
+                        }
+                        AssignmentMetadata metadata = AssignmentMetadata.now(parts[3], "manual");
+                        PermanentAssignment assignment = new PermanentAssignment(userOpt.get(), roleOpt.get(), metadata);
+                        assignmentManager.add(assignment);
+                        System.out.println("Role assigned. Assignment ID: " + assignment.assignmentId());
+                    }
+                    case "revoke-role" -> {
+                        if (parts.length < 2) {
+                            System.out.println("Usage: revoke-role <assignmentId>");
+                            continue;
+                        }
+                        assignmentManager.revokeAssignment(parts[1]);
+                        System.out.println("Role revoked");
+                    }
+                    case "audit-log" -> auditLog.printLog();
+                    case "help" -> printHelp();
+                    case "exit" -> {
+                        return;
+                    }
+                    default -> System.out.println("Unknown command. Type 'help'");
+                }
+            } catch (Exception ex) {
+                System.out.println("Error: " + ex.getMessage());
+            }
         }
+    }
 
-        try {
-            User.validate("jo!n", "John Invalid", "john.invalid@example.com");
-        } catch (IllegalArgumentException ex) {
-            System.out.println("Expected failure (username chars): " + ex.getMessage());
-        }
-
-        try {
-            User.validate("ab", "Too Short", "short@example.com");
-        } catch (IllegalArgumentException ex) {
-            System.out.println("Expected failure (username length): " + ex.getMessage());
-        }
-
-        try {
-            User.validate("valid_user", "No Dot", "nodot@domain");
-        } catch (IllegalArgumentException ex) {
-            System.out.println("Expected failure (email format): " + ex.getMessage());
-        }
-
-        try {
-            User.validate("", "", "");
-        } catch (IllegalArgumentException ex) {
-            System.out.println("Expected failure (empty fields): " + ex.getMessage());
-        }
-
-        System.out.println("\n=== Permission Tests ===\n");
-
-        try {
-            var p1 = new Permission("read", "Users", "Allows reading users");
-            System.out.println(p1.format());
-            System.out.println("matches READ/user: " + p1.matches("READ", "user"));
-            System.out.println("matches REA/ser: " + p1.matches("REA", "ser"));
-            System.out.println("matches X/ser: " + p1.matches("X", "ser"));
-        } catch (IllegalArgumentException ex) {
-            System.out.println("Permission creation failed: " + ex.getMessage());
-        }
-
-        
-        try {
-            new Permission("bad name", "res", "desc");
-        } catch (IllegalArgumentException ex) {
-            System.out.println("Expected failure (name contains spaces): " + ex.getMessage());
-        }
-
-        try {
-            new Permission("OK", "res", "   ");
-        } catch (IllegalArgumentException ex) {
-            System.out.println("Expected failure (empty description): " + ex.getMessage());
-        }
-
-        System.out.println("\n=== PermanentAssignment Tests ===\n");
-
-        User admin = User.validate("admin", "Administrator", "admin@example.com");
-        User manager = User.validate("manager_user", "Manager", "manager@example.com");
-
-        Role adminRole = new Role("Administrator", "Full system access");
-        Role managerRole = new Role("Manager", "Manager access");
-
-        AssignmentMetadata metadata1 = new AssignmentMetadata("admin", "2026-02-13T10:00:00", "Initial setup");
-        PermanentAssignment permanent = new PermanentAssignment(admin, adminRole, metadata1);
-
-        System.out.println("Permanent Assignment:");
-        System.out.println(permanent.summary());
-        System.out.println("\nIs active: " + permanent.isActive());
-        System.out.println("Is revoked: " + permanent.isRevoked());
-
-        System.out.println("\n--- After revoke ---");
-        permanent.revoke();
-        System.out.println("Is active: " + permanent.isActive());
-        System.out.println("Is revoked: " + permanent.isRevoked());
-        System.out.println(permanent.summary());
-
-        System.out.println("\n=== TemporaryAssignment Tests ===\n");
-
-        LocalDateTime expiresAt = LocalDateTime.now().plusDays(30);
-        AssignmentMetadata metadata2 = AssignmentMetadata.now("admin", "Project access");
-        TemporaryAssignment temporary = new TemporaryAssignment(manager, managerRole, metadata2, expiresAt, false);
-
-        System.out.println("Temporary Assignment:");
-        System.out.println(temporary.summary());
-        System.out.println("\nTime remaining: " + temporary.getTimeRemaining());
-        System.out.println("Remaining days: " + temporary.getRemainingDays());
-        System.out.println("Remaining hours: " + temporary.getRemainingHours());
-        System.out.println("Is active: " + temporary.isActive());
-        System.out.println("Is expired: " + temporary.isExpired());
-
-        System.out.println("\n--- After extending by 30 days ---");
-        temporary.extendByDays(30);
-        System.out.println("Time remaining: " + temporary.getTimeRemaining());
-        System.out.println("Remaining days: " + temporary.getRemainingDays());
-
-        System.out.println("\n--- Temporary with auto-renew ---");
-        LocalDateTime shortExpiry = LocalDateTime.now().plusHours(5);
-        TemporaryAssignment tempAutoRenew = new TemporaryAssignment(
-                manager,
-                managerRole,
-                metadata2,
-                shortExpiry,
-                true
-        );
-        System.out.println("Auto-renew enabled: " + tempAutoRenew.isAutoRenew());
-        System.out.println(tempAutoRenew.summary());
-
-        System.out.println("\n=== Tests finished ===");
+    private static void printHelp() {
+        System.out.println("Commands:");
+        System.out.println("  create-user <username> <fullName> <email>");
+        System.out.println("  delete-user <username>");
+        System.out.println("  create-role <name> <description>");
+        System.out.println("  delete-role <roleName>");
+        System.out.println("  assign-role <username> <roleName> <assignedBy>");
+        System.out.println("  revoke-role <assignmentId>");
+        System.out.println("  audit-log");
+        System.out.println("  help");
+        System.out.println("  exit");
     }
 }

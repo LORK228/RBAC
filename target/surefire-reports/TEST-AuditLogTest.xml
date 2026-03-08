@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report-3.0.xsd" version="3.0" name="AssignmentManagerTest" time="1.373" tests="8" errors="0" skipped="0" failures="0">
+<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report-3.0.xsd" version="3.0" name="AuditLogTest" time="0.017" tests="3" errors="0" skipped="0" failures="0">
   <properties>
     <property name="java.specification.version" value="17"/>
     <property name="sun.jnu.encoding" value="UTF-8"/>
@@ -52,12 +52,7 @@
     <property name="sun.io.unicode.encoding" value="UnicodeLittle"/>
     <property name="java.class.version" value="61.0"/>
   </properties>
-  <testcase name="testAddDuplicateAssignmentId_throws" classname="AssignmentManagerTest" time="0.073"/>
-  <testcase name="testAddAndFindAndCount" classname="AssignmentManagerTest" time="0.007"/>
-  <testcase name="testConstructor_nullManagers_throws" classname="AssignmentManagerTest" time="0.001"/>
-  <testcase name="testUserHasRole_and_userHasPermission_and_getUserPermissions" classname="AssignmentManagerTest" time="0.017"/>
-  <testcase name="testExtendTemporaryAssignment_success_updatesExpiry" classname="AssignmentManagerTest" time="0.004"/>
-  <testcase name="testAddUserDoesNotExist_throws" classname="AssignmentManagerTest" time="0.002"/>
-  <testcase name="testGetActiveAndExpiredAssignments" classname="AssignmentManagerTest" time="1.208"/>
-  <testcase name="testRevokeAssignment_permanent_revokedFlagTrue" classname="AssignmentManagerTest" time="0.001"/>
+  <testcase name="testLogAndFilters" classname="AuditLogTest" time="0.007"/>
+  <testcase name="testSaveToFile" classname="AuditLogTest" time="0.005"/>
+  <testcase name="testManagersWriteAuditEntries" classname="AuditLogTest" time="0.003"/>
 </testsuite>
