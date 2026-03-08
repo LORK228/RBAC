@@ -4,6 +4,7 @@ import java.util.Scanner;
 public class Main {
     public static void main(String[] args) {
         AuditLog auditLog = new AuditLog();
+        ReportGenerator reportGenerator = new ReportGenerator();
         UserManager userManager = new UserManager(auditLog);
         RoleManager roleManager = new RoleManager(auditLog);
         AssignmentManager assignmentManager = new AssignmentManager(userManager, roleManager, auditLog);
@@ -100,6 +101,33 @@ public class Main {
                         assignmentManager.revokeAssignment(parts[1]);
                         System.out.println("Role revoked");
                     }
+                    case "report-users" -> {
+                        String report = reportGenerator.generateUserReport(userManager, assignmentManager);
+                        if (parts.length >= 2) {
+                            reportGenerator.exportToFile(report, parts[1]);
+                            System.out.println("User report saved to " + parts[1]);
+                        } else {
+                            System.out.println(report);
+                        }
+                    }
+                    case "report-roles" -> {
+                        String report = reportGenerator.generateRoleReport(roleManager, assignmentManager);
+                        if (parts.length >= 2) {
+                            reportGenerator.exportToFile(report, parts[1]);
+                            System.out.println("Role report saved to " + parts[1]);
+                        } else {
+                            System.out.println(report);
+                        }
+                    }
+                    case "report-matrix" -> {
+                        String report = reportGenerator.generatePermissionMatrix(userManager, assignmentManager);
+                        if (parts.length >= 2) {
+                            reportGenerator.exportToFile(report, parts[1]);
+                            System.out.println("Permission matrix saved to " + parts[1]);
+                        } else {
+                            System.out.println(report);
+                        }
+                    }
                     case "audit-log" -> auditLog.printLog();
                     case "help" -> printHelp();
                     case "exit" -> {
@@ -121,6 +149,9 @@ public class Main {
         System.out.println("  delete-role <roleName>");
         System.out.println("  assign-role <username> <roleName> <assignedBy>");
         System.out.println("  revoke-role <assignmentId>");
+        System.out.println("  report-users [filename]");
+        System.out.println("  report-roles [filename]");
+        System.out.println("  report-matrix [filename]");
         System.out.println("  audit-log");
         System.out.println("  help");
         System.out.println("  exit");
