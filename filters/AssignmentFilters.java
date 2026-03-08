@@ -56,32 +56,38 @@ public class AssignmentFilters
     {
         LocalDateTime targetDate = parseDate(date);
         return assignment -> {
-            // Проверяем, что это временное назначение
+            // РџСЂРѕРІРµСЂСЏРµРј, С‡С‚Рѕ СЌС‚Рѕ РІСЂРµРјРµРЅРЅРѕРµ РЅР°Р·РЅР°С‡РµРЅРёРµ
             if (!assignment.assignmentType().equals("TEMPORARY")) {
                 return false;
             }
 
             try {
-                // Пытаемся привести к TemporaryAssignment
+                // РџС‹С‚Р°РµРјСЃСЏ РїСЂРёРІРµСЃС‚Рё Рє TemporaryAssignment
                 if (assignment instanceof TemporaryAssignment temp) {
                     LocalDateTime expiresAt = temp.getExpiresAt();
                     return expiresAt.isBefore(targetDate);
                 }
             } catch (Exception e) {
-                // Игнорируем ошибки
+                // РРіРЅРѕСЂРёСЂСѓРµРј РѕС€РёР±РєРё
             }
             return false;
         };
     }
     private static LocalDateTime parseDate(String dateString)
     {
+        ValidationUtils.requireNonEmpty(dateString, "date");
+        String normalized = dateString.trim();
+        if (!ValidationUtils.isValidDate(normalized)) {
+            throw new IllegalArgumentException(
+                    "Invalid date format. Use yyyy-MM-dd or ISO format (yyyy-MM-ddTHH:mm:ss)"
+            );
+        }
         try {
-            // Пытаемся распарсить как ISO дату со временем
-            return LocalDateTime.parse(dateString, ISO_FORMATTER);
+            return LocalDateTime.parse(normalized, ISO_FORMATTER);
         } catch (Exception e1) {
             try {
-                // Пытаемся распарсить как дату без времени и добавляем 00:00:00
-                return LocalDateTime.parse(dateString + "T00:00:00", ISO_FORMATTER);
+                // РџС‹С‚Р°РµРјСЃСЏ СЂР°СЃРїР°СЂСЃРёС‚СЊ РєР°Рє РґР°С‚Сѓ Р±РµР· РІСЂРµРјРµРЅРё Рё РґРѕР±Р°РІР»СЏРµРј 00:00:00
+                return LocalDateTime.parse(normalized + "T00:00:00", ISO_FORMATTER);
             } catch (Exception e2) {
                 throw new IllegalArgumentException(
                         "Invalid date format. Use yyyy-MM-dd or ISO format (yyyy-MM-ddTHH:mm:ss)",

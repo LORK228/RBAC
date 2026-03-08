@@ -61,20 +61,22 @@ public class UserManager implements Repository<User>
 
     public Optional<User> findByUsername(String username)
     {
-        if (username == null || username.isEmpty()) {
+        String normalized = ValidationUtils.normalizeString(username);
+        if (normalized == null || normalized.isEmpty()) {
             return Optional.empty();
         }
-        return Optional.ofNullable(users.get(username));
+        return Optional.ofNullable(users.get(normalized));
     }
 
 
     public Optional<User> findByEmail(String email)
     {
-        if (email == null || email.isEmpty()) {
+        String normalized = ValidationUtils.normalizeString(email);
+        if (normalized == null || normalized.isEmpty()) {
             return Optional.empty();
         }
         return users.values().stream()
-                .filter(user -> user.email().equals(email))
+                .filter(user -> user.email().equals(normalized))
                 .findFirst();
     }
 
@@ -98,28 +100,30 @@ public class UserManager implements Repository<User>
 
     public boolean exists(String username)
     {
-        if (username == null || username.isEmpty()) {
+        String normalized = ValidationUtils.normalizeString(username);
+        if (normalized == null || normalized.isEmpty()) {
             return false;
         }
-        return users.containsKey(username);
+        return users.containsKey(normalized);
     }
 
     public void update(String username, String newFullName, String newEmail)
     {
-        if (username == null || username.isEmpty())
-            throw new IllegalArgumentException("Username cannot be null or empty");
+        String normalizedUsername = ValidationUtils.normalizeString(username);
+        ValidationUtils.requireNonEmpty(normalizedUsername, "Username");
 
-        User existingUser = users.get(username);
+        User existingUser = users.get(normalizedUsername);
         if (existingUser == null)
-            throw new IllegalArgumentException("User with username '" + username + "' not found");
+            throw new IllegalArgumentException("User with username '" + normalizedUsername + "' not found");
 
 
-        User validatedUser = User.validate(username, newFullName, newEmail);
+        User validatedUser = User.validate(normalizedUsername, newFullName, newEmail);
+        String normalizedEmail = validatedUser.email();
 
-        if (users.values().stream().anyMatch(u -> u.email().equals(newEmail)))
-            throw new IllegalArgumentException("User with email '" + newEmail + "' already exists");
+        if (users.values().stream().anyMatch(u -> u.email().equals(normalizedEmail)))
+            throw new IllegalArgumentException("User with email '" + normalizedEmail + "' already exists");
 
-        users.put(username, validatedUser);
+        users.put(normalizedUsername, validatedUser);
     }
 
     public int countByFilter(UserFilter filter)

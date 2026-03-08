@@ -18,8 +18,7 @@ public class AssignmentManager implements Repository<RoleAssignment> {
     @Override
     public void add(RoleAssignment item) {
         if (item == null) throw new IllegalArgumentException("RoleAssignment cannot be null");
-        if (item.assignmentId() == null || item.assignmentId().isEmpty())
-            throw new IllegalArgumentException("Assignment must have a non-empty ID");
+        ValidationUtils.requireNonEmpty(item.assignmentId(), "Assignment ID");
 
         if (assignmentsById.containsKey(item.assignmentId()))
             throw new IllegalArgumentException("Assignment with ID '" + item.assignmentId() + "' already exists");
@@ -132,12 +131,15 @@ public class AssignmentManager implements Repository<RoleAssignment> {
 
     public boolean userHasPermission(User user, String permissionName, String resource) {
         if (user == null || permissionName == null || resource == null) return false;
-        if (permissionName.isEmpty() || resource.isEmpty()) return false;
+        String normalizedName = ValidationUtils.normalizeString(permissionName);
+        String normalizedResource = ValidationUtils.normalizeString(resource);
+        if (normalizedName == null || normalizedResource == null) return false;
+        if (normalizedName.isEmpty() || normalizedResource.isEmpty()) return false;
 
         return assignmentsById.values().stream()
                 .filter(a -> a.user().username().equals(user.username()))
                 .filter(RoleAssignment::isActive)
-                .anyMatch(a -> a.role().hasPermission(permissionName, resource));
+                .anyMatch(a -> a.role().hasPermission(normalizedName, normalizedResource));
     }
 
     public Set<Permission> getUserPermissions(User user) {
@@ -150,8 +152,7 @@ public class AssignmentManager implements Repository<RoleAssignment> {
     }
 
     public void revokeAssignment(String assignmentId) {
-        if (assignmentId == null || assignmentId.isEmpty())
-            throw new IllegalArgumentException("Assignment ID cannot be null or empty");
+        ValidationUtils.requireNonEmpty(assignmentId, "Assignment ID");
 
         RoleAssignment assignment = assignmentsById.get(assignmentId);
         if (assignment == null)
@@ -165,10 +166,12 @@ public class AssignmentManager implements Repository<RoleAssignment> {
     }
 
     public void extendTemporaryAssignment(String assignmentId, String newExpirationDate) {
-        if (assignmentId == null || assignmentId.isEmpty())
-            throw new IllegalArgumentException("Assignment ID cannot be null or empty");
-        if (newExpirationDate == null || newExpirationDate.isEmpty())
-            throw new IllegalArgumentException("New expiration date cannot be null or empty");
+        ValidationUtils.requireNonEmpty(assignmentId, "Assignment ID");
+        ValidationUtils.requireNonEmpty(newExpirationDate, "New expiration date");
+        String normalizedDate = newExpirationDate.trim();
+        if (!ValidationUtils.isValidDate(normalizedDate)) {
+            throw new IllegalArgumentException("Invalid date format. Use yyyy-MM-dd or yyyy-MM-ddTHH:mm:ss");
+        }
 
         RoleAssignment assignment = assignmentsById.get(assignmentId);
         if (assignment == null)
@@ -177,6 +180,6 @@ public class AssignmentManager implements Repository<RoleAssignment> {
         if (!(assignment instanceof TemporaryAssignment))
             throw new IllegalArgumentException("Assignment with ID '" + assignmentId + "' is not temporary");
 
-        ((TemporaryAssignment) assignment).extend(newExpirationDate);
+        ((TemporaryAssignment) assignment).extend(normalizedDate);
     }
 }
