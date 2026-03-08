@@ -1,5 +1,9 @@
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Optional;
 import java.util.Scanner;
+import java.util.stream.Collectors;
 
 public class Main {
     public static void main(String[] args) {
@@ -24,108 +28,137 @@ public class Main {
                 continue;
             }
 
-            String[] parts = trimmed.split("\\s+");
-            String command = parts[0];
+            String command = trimmed.split("\\s+")[0];
 
             try {
                 switch (command) {
                     case "create-user" -> {
-                        if (parts.length < 4) {
-                            System.out.println("Usage: create-user <username> <fullName> <email>");
-                            continue;
-                        }
-                        User user = User.validate(parts[1], parts[2], parts[3]);
+                        ConsoleUtils.printSection("Create User");
+                        String username = ConsoleUtils.promptString(scanner, "Username", true);
+                        String fullName = ConsoleUtils.promptString(scanner, "Full name", true);
+                        String email = ConsoleUtils.promptString(scanner, "Email", true);
+                        User user = User.validate(username, fullName, email);
                         userManager.add(user);
-                        System.out.println("User created: " + user.username());
+                        ConsoleUtils.printSuccess("User created: " + user.username());
                     }
                     case "delete-user" -> {
-                        if (parts.length < 2) {
-                            System.out.println("Usage: delete-user <username>");
+                        List<User> users = userManager.findAll().stream()
+                                .sorted(Comparator.comparing(User::username))
+                                .collect(Collectors.toList());
+                        if (users.isEmpty()) {
+                            ConsoleUtils.printError("No users found");
                             continue;
                         }
-                        Optional<User> userOpt = userManager.findByUsername(parts[1]);
-                        if (userOpt.isEmpty()) {
-                            System.out.println("User not found");
+                        ConsoleUtils.printSection("Delete User");
+                        User selected = ConsoleUtils.promptChoice(scanner, "Select user", users);
+                        boolean confirm = ConsoleUtils.promptYesNo(scanner, "Delete user '" + selected.username() + "'?");
+                        if (!confirm) {
+                            ConsoleUtils.printSuccess("Canceled");
                             continue;
                         }
-                        boolean removed = userManager.remove(userOpt.get());
-                        System.out.println(removed ? "User deleted" : "User not deleted");
+                        boolean removed = userManager.remove(selected);
+                        ConsoleUtils.printSuccess(removed ? "User deleted" : "User not deleted");
                     }
                     case "create-role" -> {
-                        if (parts.length < 3) {
-                            System.out.println("Usage: create-role <name> <description>");
-                            continue;
-                        }
-                        Role role = new Role(parts[1], parts[2]);
+                        ConsoleUtils.printSection("Create Role");
+                        String roleName = ConsoleUtils.promptString(scanner, "Role name", true);
+                        String description = ConsoleUtils.promptString(scanner, "Description", true);
+                        Role role = new Role(roleName, description);
                         roleManager.add(role);
-                        System.out.println("Role created: " + role.getName());
+                        ConsoleUtils.printSuccess("Role created: " + role.getName());
                     }
                     case "delete-role" -> {
-                        if (parts.length < 2) {
-                            System.out.println("Usage: delete-role <roleName>");
+                        List<Role> roles = roleManager.findAll().stream()
+                                .sorted(Comparator.comparing(Role::getName))
+                                .collect(Collectors.toList());
+                        if (roles.isEmpty()) {
+                            ConsoleUtils.printError("No roles found");
                             continue;
                         }
-                        Optional<Role> roleOpt = roleManager.findByName(parts[1]);
-                        if (roleOpt.isEmpty()) {
-                            System.out.println("Role not found");
+                        ConsoleUtils.printSection("Delete Role");
+                        Role selected = ConsoleUtils.promptChoice(scanner, "Select role", roles);
+                        boolean confirm = ConsoleUtils.promptYesNo(scanner, "Delete role '" + selected.getName() + "'?");
+                        if (!confirm) {
+                            ConsoleUtils.printSuccess("Canceled");
                             continue;
                         }
-                        boolean removed = roleManager.remove(roleOpt.get());
-                        System.out.println(removed ? "Role deleted" : "Role not deleted");
+                        boolean removed = roleManager.remove(selected);
+                        ConsoleUtils.printSuccess(removed ? "Role deleted" : "Role not deleted");
                     }
                     case "assign-role" -> {
-                        if (parts.length < 4) {
-                            System.out.println("Usage: assign-role <username> <roleName> <assignedBy>");
+                        List<User> users = userManager.findAll().stream()
+                                .sorted(Comparator.comparing(User::username))
+                                .collect(Collectors.toList());
+                        List<Role> roles = roleManager.findAll().stream()
+                                .sorted(Comparator.comparing(Role::getName))
+                                .collect(Collectors.toList());
+                        if (users.isEmpty()) {
+                            ConsoleUtils.printError("No users found");
                             continue;
                         }
-                        Optional<User> userOpt = userManager.findByUsername(parts[1]);
-                        Optional<Role> roleOpt = roleManager.findByName(parts[2]);
-                        if (userOpt.isEmpty()) {
-                            System.out.println("User not found");
+                        if (roles.isEmpty()) {
+                            ConsoleUtils.printError("No roles found");
                             continue;
                         }
-                        if (roleOpt.isEmpty()) {
-                            System.out.println("Role not found");
-                            continue;
-                        }
-                        AssignmentMetadata metadata = AssignmentMetadata.now(parts[3], "manual");
-                        PermanentAssignment assignment = new PermanentAssignment(userOpt.get(), roleOpt.get(), metadata);
+                        ConsoleUtils.printSection("Assign Role");
+                        User selectedUser = ConsoleUtils.promptChoice(scanner, "Select user", users);
+                        Role selectedRole = ConsoleUtils.promptChoice(scanner, "Select role", roles);
+                        String assignedBy = ConsoleUtils.promptString(scanner, "Assigned by", true);
+                        AssignmentMetadata metadata = AssignmentMetadata.now(assignedBy, "manual");
+                        PermanentAssignment assignment = new PermanentAssignment(selectedUser, selectedRole, metadata);
                         assignmentManager.add(assignment);
-                        System.out.println("Role assigned. Assignment ID: " + assignment.assignmentId());
+                        ConsoleUtils.printSuccess("Role assigned. Assignment ID: " + assignment.assignmentId());
                     }
                     case "revoke-role" -> {
-                        if (parts.length < 2) {
-                            System.out.println("Usage: revoke-role <assignmentId>");
+                        List<RoleAssignment> assignments = new ArrayList<>(assignmentManager.findAll());
+                        if (assignments.isEmpty()) {
+                            ConsoleUtils.printError("No assignments found");
                             continue;
                         }
-                        assignmentManager.revokeAssignment(parts[1]);
-                        System.out.println("Role revoked");
+                        ConsoleUtils.printSection("Revoke Role");
+                        RoleAssignment selected = ConsoleUtils.promptChoice(scanner, "Select assignment", assignments);
+                        boolean confirm = ConsoleUtils.promptYesNo(scanner, "Revoke assignment '" + selected.assignmentId() + "'?");
+                        if (!confirm) {
+                            ConsoleUtils.printSuccess("Canceled");
+                            continue;
+                        }
+                        assignmentManager.revokeAssignment(selected.assignmentId());
+                        ConsoleUtils.printSuccess("Role revoked");
                     }
                     case "report-users" -> {
                         String report = reportGenerator.generateUserReport(userManager, assignmentManager);
-                        if (parts.length >= 2) {
-                            reportGenerator.exportToFile(report, parts[1]);
-                            System.out.println("User report saved to " + parts[1]);
+                        System.out.println(report);
+                        boolean shouldSave = ConsoleUtils.promptYesNo(scanner, "Save report to file?");
+                        if (shouldSave) {
+                            String filename = ConsoleUtils.promptString(scanner, "Filename", true);
+                            reportGenerator.exportToFile(report, filename);
+                            ConsoleUtils.printSuccess("User report saved to " + filename);
                         } else {
-                            System.out.println(report);
+                            ConsoleUtils.printSuccess("Report shown in console");
                         }
                     }
                     case "report-roles" -> {
                         String report = reportGenerator.generateRoleReport(roleManager, assignmentManager);
-                        if (parts.length >= 2) {
-                            reportGenerator.exportToFile(report, parts[1]);
-                            System.out.println("Role report saved to " + parts[1]);
+                        System.out.println(report);
+                        boolean shouldSave = ConsoleUtils.promptYesNo(scanner, "Save report to file?");
+                        if (shouldSave) {
+                            String filename = ConsoleUtils.promptString(scanner, "Filename", true);
+                            reportGenerator.exportToFile(report, filename);
+                            ConsoleUtils.printSuccess("Role report saved to " + filename);
                         } else {
-                            System.out.println(report);
+                            ConsoleUtils.printSuccess("Report shown in console");
                         }
                     }
                     case "report-matrix" -> {
                         String report = reportGenerator.generatePermissionMatrix(userManager, assignmentManager);
-                        if (parts.length >= 2) {
-                            reportGenerator.exportToFile(report, parts[1]);
-                            System.out.println("Permission matrix saved to " + parts[1]);
+                        System.out.println(report);
+                        boolean shouldSave = ConsoleUtils.promptYesNo(scanner, "Save report to file?");
+                        if (shouldSave) {
+                            String filename = ConsoleUtils.promptString(scanner, "Filename", true);
+                            reportGenerator.exportToFile(report, filename);
+                            ConsoleUtils.printSuccess("Permission matrix saved to " + filename);
                         } else {
-                            System.out.println(report);
+                            ConsoleUtils.printSuccess("Report shown in console");
                         }
                     }
                     case "audit-log" -> auditLog.printLog();
@@ -136,22 +169,22 @@ public class Main {
                     default -> System.out.println("Unknown command. Type 'help'");
                 }
             } catch (Exception ex) {
-                System.out.println("Error: " + ex.getMessage());
+                ConsoleUtils.printError(ex.getMessage());
             }
         }
     }
 
     private static void printHelp() {
-        System.out.println("Commands:");
-        System.out.println("  create-user <username> <fullName> <email>");
-        System.out.println("  delete-user <username>");
-        System.out.println("  create-role <name> <description>");
-        System.out.println("  delete-role <roleName>");
-        System.out.println("  assign-role <username> <roleName> <assignedBy>");
-        System.out.println("  revoke-role <assignmentId>");
-        System.out.println("  report-users [filename]");
-        System.out.println("  report-roles [filename]");
-        System.out.println("  report-matrix [filename]");
+        ConsoleUtils.printSection("Commands");
+        System.out.println("  create-user");
+        System.out.println("  delete-user");
+        System.out.println("  create-role");
+        System.out.println("  delete-role");
+        System.out.println("  assign-role");
+        System.out.println("  revoke-role");
+        System.out.println("  report-users");
+        System.out.println("  report-roles");
+        System.out.println("  report-matrix");
         System.out.println("  audit-log");
         System.out.println("  help");
         System.out.println("  exit");
