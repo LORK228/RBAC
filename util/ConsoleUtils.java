@@ -2,8 +2,6 @@ import java.util.List;
 import java.util.Scanner;
 
 public class ConsoleUtils {
-    private static final String BORDER = "============================================================";
-
     public static String promptString(Scanner scanner, String message, boolean required) {
         while (true) {
             System.out.print(message + ": ");
@@ -64,9 +62,14 @@ public class ConsoleUtils {
         }
 
         printSection(message);
+        List<String[]> rows = new java.util.ArrayList<>();
         for (int i = 0; i < options.size(); i++) {
-            System.out.println(String.format("  %d) %s", i + 1, options.get(i)));
+            rows.add(new String[]{
+                    String.valueOf(i + 1),
+                    FormatUtils.truncate(String.valueOf(options.get(i)), 80)
+            });
         }
+        System.out.println(FormatUtils.formatTable(new String[]{"No", "Value"}, rows));
 
         int choice = promptInt(scanner, "Choose option number", 1, options.size());
         return options.get(choice - 1);
@@ -74,9 +77,7 @@ public class ConsoleUtils {
 
     public static void printSection(String title) {
         System.out.println();
-        System.out.println(BORDER);
-        System.out.println("  " + title);
-        System.out.println(BORDER);
+        System.out.println(FormatUtils.formatBox(FormatUtils.formatHeader(title)));
     }
 
     public static void printSuccess(String message) {

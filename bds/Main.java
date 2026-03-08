@@ -176,17 +176,20 @@ public class Main {
 
     private static void printHelp() {
         ConsoleUtils.printSection("Commands");
-        System.out.println("  create-user");
-        System.out.println("  delete-user");
-        System.out.println("  create-role");
-        System.out.println("  delete-role");
-        System.out.println("  assign-role");
-        System.out.println("  revoke-role");
-        System.out.println("  report-users");
-        System.out.println("  report-roles");
-        System.out.println("  report-matrix");
-        System.out.println("  audit-log");
-        System.out.println("  help");
-        System.out.println("  exit");
+        List<String[]> rows = List.of(
+                new String[]{"create-user", "Create user (wizard)"},
+                new String[]{"delete-user", "Delete user (wizard)"},
+                new String[]{"create-role", "Create role (wizard)"},
+                new String[]{"delete-role", "Delete role (wizard)"},
+                new String[]{"assign-role", "Assign role to user (wizard)"},
+                new String[]{"revoke-role", "Revoke role assignment (wizard)"},
+                new String[]{"report-users", "User report"},
+                new String[]{"report-roles", "Role report"},
+                new String[]{"report-matrix", "Permission matrix"},
+                new String[]{"audit-log", "Show audit log"},
+                new String[]{"help", "Show help"},
+                new String[]{"exit", "Exit application"}
+        );
+        System.out.println(FormatUtils.formatTable(new String[]{"Command", "Description"}, rows));
     }
 }

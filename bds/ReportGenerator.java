@@ -18,12 +18,13 @@ public class ReportGenerator {
         }
 
         StringBuilder sb = new StringBuilder();
-        sb.append("=== User Report ===\n");
+        sb.append(FormatUtils.formatHeader("User Report")).append("\n\n");
 
         List<User> users = userManager.findAll().stream()
                 .sorted(Comparator.comparing(User::username))
                 .collect(Collectors.toList());
 
+        List<String[]> rows = new ArrayList<>();
         for (User user : users) {
             List<String> activeRoles = assignmentManager.findByUser(user).stream()
                     .filter(RoleAssignment::isActive)
@@ -33,11 +34,18 @@ public class ReportGenerator {
                     .collect(Collectors.toList());
 
             String rolesStr = activeRoles.isEmpty() ? "-" : String.join(", ", activeRoles);
-            sb.append(String.format("User: %s (%s)%n", user.username(), user.email()));
-            sb.append(String.format("Roles: %s%n", rolesStr));
-            sb.append("\n");
+            rows.add(new String[]{
+                    FormatUtils.truncate(user.username(), 20),
+                    FormatUtils.truncate(user.fullName(), 30),
+                    FormatUtils.truncate(user.email(), 35),
+                    FormatUtils.truncate(rolesStr, 40)
+            });
         }
 
+        sb.append(FormatUtils.formatTable(
+                new String[]{"Username", "Full Name", "Email", "Roles"},
+                rows
+        ));
         return sb.toString();
     }
 
@@ -47,12 +55,13 @@ public class ReportGenerator {
         }
 
         StringBuilder sb = new StringBuilder();
-        sb.append("=== Role Report ===\n");
+        sb.append(FormatUtils.formatHeader("Role Report")).append("\n\n");
 
         List<Role> roles = roleManager.findAll().stream()
                 .sorted(Comparator.comparing(Role::getName))
                 .collect(Collectors.toList());
 
+        List<String[]> rows = new ArrayList<>();
         for (Role role : roles) {
             long userCount = assignmentManager.findByRole(role).stream()
                     .filter(RoleAssignment::isActive)
@@ -60,9 +69,17 @@ public class ReportGenerator {
                     .distinct()
                     .count();
 
-            sb.append(String.format("Role: %s | Users: %d%n", role.getName(), userCount));
+            rows.add(new String[]{
+                    FormatUtils.truncate(role.getName(), 25),
+                    FormatUtils.truncate(role.getDescription(), 45),
+                    String.format("%d", userCount)
+            });
         }
 
+        sb.append(FormatUtils.formatTable(
+                new String[]{"Role", "Description", "Users"},
+                rows
+        ));
         return sb.toString();
     }
 
@@ -86,15 +103,20 @@ public class ReportGenerator {
         resourceColumns.sort(String::compareTo);
 
         StringBuilder sb = new StringBuilder();
-        sb.append("=== Permission Matrix ===\n");
-        sb.append(String.format("%-20s", "User"));
+        sb.append(FormatUtils.formatHeader("Permission Matrix")).append("\n\n");
+
+        List<String> headersList = new ArrayList<>();
+        headersList.add("User");
         for (String resource : resourceColumns) {
-            sb.append(String.format("| %-20s", resource));
+            headersList.add(FormatUtils.truncate(resource, 20));
         }
-        sb.append("\n");
+        String[] headers = headersList.toArray(new String[0]);
+
+        List<String[]> rows = new ArrayList<>();
 
         for (User user : users) {
-            sb.append(String.format("%-20s", user.username()));
+            List<String> row = new ArrayList<>();
+            row.add(FormatUtils.truncate(user.username(), 20));
 
             Map<String, List<String>> byResource = new TreeMap<>();
             for (Permission permission : assignmentManager.getUserPermissions(user)) {
@@ -104,11 +126,12 @@ public class ReportGenerator {
             for (String resource : resourceColumns) {
                 List<String> names = byResource.getOrDefault(resource, List.of());
                 String cell = names.isEmpty() ? "-" : names.stream().distinct().sorted().collect(Collectors.joining(","));
-                sb.append(String.format("| %-20s", cell));
+                row.add(FormatUtils.truncate(cell, 30));
             }
-            sb.append("\n");
+            rows.add(row.toArray(new String[0]));
         }
 
+        sb.append(FormatUtils.formatTable(headers, rows));
         return sb.toString();
     }
 

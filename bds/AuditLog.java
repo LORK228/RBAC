@@ -52,14 +52,13 @@ public class AuditLog {
             return;
         }
 
-        for (AuditEntry entry : entries) {
-            System.out.printf("[%s] action=%s performer=%s target=%s details=%s%n",
-                    entry.timestamp(),
-                    entry.action(),
-                    entry.performer(),
-                    entry.target(),
-                    entry.details());
-        }
+        List<String[]> rows = toRows(entries);
+        String table = FormatUtils.formatTable(
+                new String[]{"Timestamp", "Action", "Performer", "Target", "Details"},
+                rows
+        );
+        System.out.println(FormatUtils.formatHeader("Audit Log"));
+        System.out.println(table);
     }
 
     public void saveToFile(String filename) {
@@ -67,19 +66,33 @@ public class AuditLog {
             throw new IllegalArgumentException("filename must not be empty");
         }
 
-        List<String> lines = entries.stream()
-                .map(e -> String.format("[%s] action=%s performer=%s target=%s details=%s",
-                        e.timestamp(), e.action(), e.performer(), e.target(), e.details()))
-                .collect(Collectors.toList());
+        String content = FormatUtils.formatHeader("Audit Log") + System.lineSeparator()
+                + System.lineSeparator()
+                + FormatUtils.formatTable(
+                new String[]{"Timestamp", "Action", "Performer", "Target", "Details"},
+                toRows(entries)
+        );
 
         Path path = Path.of(filename.trim());
         try {
-            Files.write(path, lines,
+            Files.write(path, List.of(content),
                     StandardOpenOption.CREATE,
                     StandardOpenOption.TRUNCATE_EXISTING,
                     StandardOpenOption.WRITE);
         } catch (IOException ex) {
             throw new RuntimeException("Failed to save audit log to file: " + filename, ex);
         }
+    }
+
+    private List<String[]> toRows(List<AuditEntry> source) {
+        return source.stream()
+                .map(e -> new String[]{
+                        FormatUtils.truncate(e.timestamp(), 26),
+                        FormatUtils.truncate(e.action(), 20),
+                        FormatUtils.truncate(e.performer(), 20),
+                        FormatUtils.truncate(e.target(), 28),
+                        FormatUtils.truncate(e.details(), 40)
+                })
+                .collect(Collectors.toList());
     }
 }
