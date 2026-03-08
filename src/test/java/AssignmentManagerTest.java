@@ -139,4 +139,20 @@ public class AssignmentManagerTest {
         am.extendTemporaryAssignment(t.assignmentId(), newExp);
         assertTrue(t.getExpiresAt().isAfter(java.time.LocalDateTime.now().plusMinutes(30)));
     }
+
+    @Test
+    public void testExtendTemporaryAssignment_dateOnly_success() {
+        User u = TestDataFactory.createUser("olga");
+        Role r = TestDataFactory.createRole("roleH");
+        um.add(u);
+        rm.add(r);
+        TemporaryAssignment t = TestDataFactory.createTemporaryAssignment(u, r, 10);
+        am.add(t);
+
+        String tomorrow = DateUtils.addDays(DateUtils.getCurrentDate(), 1);
+        am.extendTemporaryAssignment(t.assignmentId(), tomorrow);
+
+        assertEquals(23, t.getExpiresAt().getHour());
+        assertEquals(59, t.getExpiresAt().getMinute());
+    }
 }

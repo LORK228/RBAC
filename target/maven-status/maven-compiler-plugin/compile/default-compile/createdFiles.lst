@@ -6,6 +6,7 @@ ValidationUtils.class
 Main.class
 UserManager.class
 AbstractRoleAssignment.class
+DateUtils.class
 RoleManager.class
 PermanentAssignment.class
 UserFilters.class
@@ -19,7 +20,10 @@ AssignmentFilter.class
 Permission.class
 RoleSorters.class
 RoleAssignment.class
+ReportGenerator.class
 UserFilter.class
 AuditLog.class
+FormatUtils.class
 AssignmentFilters.class
+ConsoleUtils.class
 AssignmentSorters.class

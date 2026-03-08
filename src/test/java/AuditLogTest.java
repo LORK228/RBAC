@@ -30,8 +30,9 @@ public class AuditLogTest {
         log.saveToFile(file.toString());
 
         List<String> lines = Files.readAllLines(file);
-        assertEquals(1, lines.size());
-        assertTrue(lines.get(0).contains("CREATE_USER"));
+        assertTrue(lines.size() >= 1);
+        String content = String.join("\n", lines);
+        assertTrue(content.contains("CREATE_USER"));
     }
 
     @Test

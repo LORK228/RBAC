@@ -193,6 +193,9 @@ public class AssignmentManager implements Repository<RoleAssignment> {
         if (!ValidationUtils.isValidDate(normalizedDate)) {
             throw new IllegalArgumentException("Invalid date format. Use yyyy-MM-dd or yyyy-MM-ddTHH:mm:ss");
         }
+        String toExtend = normalizedDate.contains("T")
+                ? normalizedDate
+                : DateUtils.addDays(normalizedDate, 0) + "T23:59:59";
 
         RoleAssignment assignment = assignmentsById.get(assignmentId);
         if (assignment == null)
@@ -201,6 +204,6 @@ public class AssignmentManager implements Repository<RoleAssignment> {
         if (!(assignment instanceof TemporaryAssignment))
             throw new IllegalArgumentException("Assignment with ID '" + assignmentId + "' is not temporary");
 
-        ((TemporaryAssignment) assignment).extend(normalizedDate);
+        ((TemporaryAssignment) assignment).extend(toExtend);
     }
 }

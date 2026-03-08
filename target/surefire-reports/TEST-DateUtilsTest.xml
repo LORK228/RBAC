@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report-3.0.xsd" version="3.0" name="RoleManagerTest" time="0.007" tests="8" errors="0" skipped="0" failures="0">
+<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report-3.0.xsd" version="3.0" name="DateUtilsTest" time="0.006" tests="4" errors="0" skipped="0" failures="0">
   <properties>
     <property name="java.specification.version" value="17"/>
     <property name="sun.jnu.encoding" value="UTF-8"/>
@@ -52,12 +52,8 @@
     <property name="sun.io.unicode.encoding" value="UnicodeLittle"/>
     <property name="java.class.version" value="61.0"/>
   </properties>
-  <testcase name="testFindById_nullEmpty_returnsEmpty" classname="RoleManagerTest" time="0.0"/>
-  <testcase name="testAddDuplicateName_throws" classname="RoleManagerTest" time="0.001"/>
-  <testcase name="testExists_nullEmpty_returnsFalse" classname="RoleManagerTest" time="0.001"/>
-  <testcase name="testAddPermissionAndFindRolesWithPermission" classname="RoleManagerTest" time="0.001"/>
-  <testcase name="testRemoveRole_withoutAssignments_successful" classname="RoleManagerTest" time="0.0"/>
-  <testcase name="testRemoveRole_withActiveAssignment_throws" classname="RoleManagerTest" time="0.0"/>
-  <testcase name="testAddValidRole_increasesCount" classname="RoleManagerTest" time="0.0"/>
-  <testcase name="testAddNull_throws" classname="RoleManagerTest" time="0.001"/>
+  <testcase name="testCurrentDateFormats" classname="DateUtilsTest" time="0.0"/>
+  <testcase name="testBeforeAfter" classname="DateUtilsTest" time="0.002"/>
+  <testcase name="testAddDays" classname="DateUtilsTest" time="0.002"/>
+  <testcase name="testFormatRelativeTime" classname="DateUtilsTest" time="0.001"/>
 </testsuite>

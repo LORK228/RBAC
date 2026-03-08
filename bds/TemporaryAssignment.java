@@ -27,7 +27,7 @@ public class TemporaryAssignment extends AbstractRoleAssignment {
 
     public TemporaryAssignment(User user, Role role, AssignmentMetadata metadata,
                                String expiresAtString, boolean autoRenew) {
-        this(user, role, metadata, LocalDateTime.parse(expiresAtString, ISO_FORMATTER), autoRenew);
+        this(user, role, metadata, parseExpirationString(expiresAtString), autoRenew);
     }
 
     public TemporaryAssignment(User user, Role role, AssignmentMetadata metadata,
@@ -67,8 +67,10 @@ public class TemporaryAssignment extends AbstractRoleAssignment {
     }
 
     public void extend(String newExpirationDate) {
-        LocalDateTime newExpiry = LocalDateTime.parse(newExpirationDate, ISO_FORMATTER);
-
+        LocalDateTime newExpiry = parseExpirationString(newExpirationDate);
+        if (DateUtils.isBefore(newExpiry.toLocalDate().toString(), DateUtils.getCurrentDate())) {
+            throw new IllegalArgumentException("New expiration date must be in the future");
+        }
         if (newExpiry.isBefore(LocalDateTime.now())) {
             throw new IllegalArgumentException("New expiration date must be in the future");
         }
@@ -160,7 +162,8 @@ public class TemporaryAssignment extends AbstractRoleAssignment {
             timeRemaining = (days > 0) ? String.format("%d days %d hours", days, hours)
                     : String.format("%d hours %d minutes", d.toHours(), d.minusHours(d.toHours()).toMinutes());
         }
-        sb.append(String.format("Expires: %s (%s remaining)\n", expiresAtFormatted, timeRemaining));
+        String relativeDate = DateUtils.formatRelativeTime(expiresAt.toLocalDate().toString());
+        sb.append(String.format("Expires: %s (%s remaining, %s)\n", expiresAtFormatted, timeRemaining, relativeDate));
 
         String status = d.isNegative() || d.isZero() ? "EXPIRED" : "ACTIVE";
         if (autoRenew && d.isNegative()) {
@@ -182,5 +185,14 @@ public class TemporaryAssignment extends AbstractRoleAssignment {
 
     private String formatDateTime(LocalDateTime dt) {
         return dt.format(READABLE_FORMATTER);
+    }
+
+    private static LocalDateTime parseExpirationString(String value) {
+        ValidationUtils.requireNonEmpty(value, "expiresAt");
+        String trimmed = value.trim();
+        if (trimmed.contains("T")) {
+            return LocalDateTime.parse(trimmed, ISO_FORMATTER);
+        }
+        return LocalDateTime.parse(trimmed + "T23:59:59", ISO_FORMATTER);
     }
 }
