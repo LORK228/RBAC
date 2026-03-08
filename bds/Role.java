@@ -53,18 +53,20 @@ public class Role
 
     public boolean hasPermission(String permissionName, String resource)
     {
-        if (permissionName == null || resource == null) {
+        String normalizedName = ValidationUtils.normalizeString(permissionName);
+        String normalizedResource = ValidationUtils.normalizeString(resource);
+        if (normalizedName == null || normalizedResource == null) {
             return false;
         }
-        String normalizedName = permissionName.trim().toUpperCase();
-        String normalizedResource = resource.trim().toLowerCase();
         if (normalizedName.isEmpty() || normalizedResource.isEmpty()) {
             return false;
         }
+        final String normalizedNameUpper = normalizedName.toUpperCase();
+        final String normalizedResourceFinal = normalizedResource;
 
         return permissions
                 .stream()
-                .anyMatch(x -> x.name().equals(normalizedName) && x.resource().equals(normalizedResource));
+                .anyMatch(x -> x.name().equals(normalizedNameUpper) && x.resource().equals(normalizedResourceFinal));
     }
 
     public Set<Permission> getPermissions()

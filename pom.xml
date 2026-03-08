@@ -42,6 +42,7 @@
                                 <source>${project.basedir}/bds</source>
                                 <source>${project.basedir}/DataManagers</source>
                                 <source>${project.basedir}/filters</source>
+                                <source>${project.basedir}/util</source>
                             </sources>
                         </configuration>
                     </execution>
