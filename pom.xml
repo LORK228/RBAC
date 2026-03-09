@@ -40,6 +40,7 @@
                         <configuration>
                             <sources>
                                 <source>${project.basedir}/bds</source>
+                                <source>${project.basedir}/commands</source>
                                 <source>${project.basedir}/DataManagers</source>
                                 <source>${project.basedir}/filters</source>
                                 <source>${project.basedir}/util</source>
