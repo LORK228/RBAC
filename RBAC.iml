@@ -8,6 +8,7 @@
       <sourceFolder url="file://$MODULE_DIR$/DataManagers" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/util" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/commands" isTestSource="false" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
