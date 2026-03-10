@@ -36,6 +36,16 @@ public class Role
         return description;
     }
 
+    public void setName(String name) {
+        ValidationUtils.requireNonEmpty(name, "role name");
+        this.name = name;
+    }
+
+    public void setDescription(String description) {
+        ValidationUtils.requireNonEmpty(description, "role description");
+        this.description = description;
+    }
+
     public void addPermission(Permission permission)
     {
         permissions.add(permission);

@@ -205,6 +205,27 @@ public class RoleManager implements Repository<Role>
                 .collect(Collectors.toList());
     }
 
+    public void updateRole(String currentName, String newName, String newDescription)
+    {
+        ValidationUtils.requireNonEmpty(currentName, "currentName");
+        ValidationUtils.requireNonEmpty(newName, "newName");
+        ValidationUtils.requireNonEmpty(newDescription, "newDescription");
+
+        Role role = rolesByName.get(currentName);
+        if (role == null) {
+            throw new IllegalArgumentException("Role with name '" + currentName + "' not found");
+        }
+
+        if (!currentName.equals(newName) && rolesByName.containsKey(newName)) {
+            throw new IllegalArgumentException("Role with name '" + newName + "' already exists");
+        }
+
+        rolesByName.remove(currentName);
+        role.setName(newName);
+        role.setDescription(newDescription);
+        rolesByName.put(role.getName(), role);
+    }
+
     @Override
     public String toString()
     {
