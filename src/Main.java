@@ -82,8 +82,8 @@ public class Main {
         }
 
         synchronized (LOCK) {
-            moveCursor(index + 3, 1); // каждая нить в своей строке
-            System.out.print("\033[2K"); // очистить строку
+            moveCursor(index + 3, 1);
+            System.out.print("\033[2K"); 
             System.out.print(line);
             System.out.flush();
         }
