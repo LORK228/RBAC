@@ -1,18 +1,25 @@
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
-public class RBACSystem {
+public class RBACSystem implements AutoCloseable {
     private final UserManager userManager;
     private final RoleManager roleManager;
     private final AssignmentManager assignmentManager;
+    private final AuditLog auditLog;
+    private final ReportGenerator reportGenerator;
+    private final BackgroundExecutor backgroundExecutor;
     private String currentUser;
 
     public RBACSystem() {
-        this.userManager = new UserManager();
-        this.roleManager = new RoleManager();
-        this.assignmentManager = new AssignmentManager(userManager, roleManager);
+        this.auditLog = new AuditLog();
+        this.userManager = new UserManager(auditLog);
+        this.roleManager = new RoleManager(auditLog);
+        this.assignmentManager = new AssignmentManager(userManager, roleManager, auditLog);
         this.roleManager.setAssignmentManager(this.assignmentManager);
+        this.reportGenerator = new ReportGenerator();
+        this.backgroundExecutor = new BackgroundExecutor(Runtime.getRuntime().availableProcessors());
         this.currentUser = "system";
     }
 
@@ -26,6 +33,14 @@ public class RBACSystem {
 
     public AssignmentManager getAssignmentManager() {
         return assignmentManager;
+    }
+
+    public AuditLog getAuditLog() {
+        return auditLog;
+    }
+
+    public BackgroundExecutor getBackgroundExecutor() {
+        return backgroundExecutor;
     }
 
     public void setCurrentUser(String username) {
@@ -87,6 +102,17 @@ public class RBACSystem {
         assignmentManager.add(assignment);
     }
 
+    public Future<?> generateUsersReportAsync() {
+        return backgroundExecutor.submit(() -> {
+            String report = reportGenerator.generateUserReport(userManager, assignmentManager);
+            System.out.println(report);
+        });
+    }
+
+    public Future<?> saveSystemAsync(String filename) {
+        return backgroundExecutor.submit(() -> CommandSupport.saveSystem(this, filename));
+    }
+
     public String generateStatistics() {
         int users = userManager.count();
         int roles = roleManager.count();
@@ -131,5 +157,11 @@ public class RBACSystem {
         }
 
         return sb.toString();
+    }
+
+    @Override
+    public void close() {
+        backgroundExecutor.close();
+        auditLog.close();
     }
 }
