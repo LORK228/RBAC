@@ -1,9 +1,11 @@
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 public class UserManager implements Repository<User>
 {
-    private Map<String, User> users = new HashMap<>();
+    private final Map<String, User> users = new ConcurrentHashMap<>();
+    private final Object usersLock = new Object();
     private AuditLog auditLog;
 
     public UserManager() {
@@ -25,14 +27,15 @@ public class UserManager implements Repository<User>
             throw new IllegalArgumentException("User cannot be null");
 
         User validatedUser = User.validate(user.username(), user.fullName(), user.email());
+        synchronized (usersLock) {
+            if (users.containsKey(validatedUser.username()))
+                throw new IllegalArgumentException("User with username '" + validatedUser.username() + "' already exists");
 
-        if (users.containsKey(validatedUser.username()))
-            throw new IllegalArgumentException("User with username '" + validatedUser.username() + "' already exists");
+            if (users.values().stream().anyMatch(u -> u.email().equals(validatedUser.email())))
+                throw new IllegalArgumentException("User with email '" + validatedUser.email() + "' already exists");
 
-        if (users.values().stream().anyMatch(u -> u.email().equals(validatedUser.email())))
-            throw new IllegalArgumentException("User with email '" + validatedUser.email() + "' already exists");
-
-        users.put(validatedUser.username(), validatedUser);
+            users.put(validatedUser.username(), validatedUser);
+        }
         if (auditLog != null) {
             auditLog.log("CREATE_USER", "system", validatedUser.username(),
                     "User created with email " + validatedUser.email());
@@ -76,7 +79,9 @@ public class UserManager implements Repository<User>
     @Override
     public void clear()
     {
-        users.clear();
+        synchronized (usersLock) {
+            users.clear();
+        }
     }
 
 
@@ -111,6 +116,16 @@ public class UserManager implements Repository<User>
                 .collect(Collectors.toList());
     }
 
+    public List<User> findByFilterParallel(UserFilter filter)
+    {
+        if (filter == null) {
+            return new ArrayList<>();
+        }
+        return users.values().parallelStream()
+                .filter(filter::test)
+                .collect(Collectors.toList());
+    }
+
     public List<User> findAll(UserFilter filter, Comparator<User> sorter)
     {
         return users.values().stream()
@@ -133,18 +148,21 @@ public class UserManager implements Repository<User>
         String normalizedUsername = ValidationUtils.normalizeString(username);
         ValidationUtils.requireNonEmpty(normalizedUsername, "Username");
 
-        User existingUser = users.get(normalizedUsername);
-        if (existingUser == null)
-            throw new IllegalArgumentException("User with username '" + normalizedUsername + "' not found");
+        synchronized (usersLock) {
+            User existingUser = users.get(normalizedUsername);
+            if (existingUser == null)
+                throw new IllegalArgumentException("User with username '" + normalizedUsername + "' not found");
 
+            User validatedUser = User.validate(normalizedUsername, newFullName, newEmail);
+            String normalizedEmail = validatedUser.email();
 
-        User validatedUser = User.validate(normalizedUsername, newFullName, newEmail);
-        String normalizedEmail = validatedUser.email();
+            boolean duplicateEmail = users.values().stream()
+                    .anyMatch(u -> !u.username().equals(normalizedUsername) && u.email().equals(normalizedEmail));
+            if (duplicateEmail)
+                throw new IllegalArgumentException("User with email '" + normalizedEmail + "' already exists");
 
-        if (users.values().stream().anyMatch(u -> u.email().equals(normalizedEmail)))
-            throw new IllegalArgumentException("User with email '" + normalizedEmail + "' already exists");
-
-        users.put(normalizedUsername, validatedUser);
+            users.put(normalizedUsername, validatedUser);
+        }
     }
 
     public int countByFilter(UserFilter filter)

@@ -1,11 +1,13 @@
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 public class RoleManager implements Repository<Role>
 {
-    private Map<String, Role> rolesById = new HashMap<>();
+    private final Map<String, Role> rolesById = new ConcurrentHashMap<>();
 
-    private Map<String, Role> rolesByName = new HashMap<>();
+    private final Map<String, Role> rolesByName = new ConcurrentHashMap<>();
+    private final Object rolesLock = new Object();
 
     private AssignmentManager assignmentManager;
     private AuditLog auditLog;
@@ -47,14 +49,16 @@ public class RoleManager implements Repository<Role>
         if (item == null)
             throw new IllegalArgumentException("Role cannot be null");
 
-        if (rolesById.containsKey(item.getId()))
-            throw new IllegalArgumentException("Role with ID '" + item.getId() + "' already exists");
+        synchronized (rolesLock) {
+            if (rolesById.containsKey(item.getId()))
+                throw new IllegalArgumentException("Role with ID '" + item.getId() + "' already exists");
 
-        if (rolesByName.containsKey(item.getName()))
-            throw new IllegalArgumentException("Role with name '" + item.getName() + "' already exists");
+            if (rolesByName.containsKey(item.getName()))
+                throw new IllegalArgumentException("Role with name '" + item.getName() + "' already exists");
 
-        rolesById.put(item.getId(), item);
-        rolesByName.put(item.getName(), item);
+            rolesById.put(item.getId(), item);
+            rolesByName.put(item.getName(), item);
+        }
         if (auditLog != null) {
             auditLog.log("CREATE_ROLE", "system", item.getName(),
                     "Role created with id " + item.getId());
@@ -80,14 +84,17 @@ public class RoleManager implements Repository<Role>
             }
         }
 
-        boolean removed = rolesById.remove(item.getId()) != null;
-        if (removed)
-        {
-            rolesByName.remove(item.getName());
-            if (auditLog != null) {
-                auditLog.log("DELETE_ROLE", "system", item.getName(),
-                        "Role deleted with id " + item.getId());
+        boolean removed;
+        synchronized (rolesLock) {
+            removed = rolesById.remove(item.getId()) != null;
+            if (removed)
+            {
+                rolesByName.remove(item.getName());
             }
+        }
+        if (removed && auditLog != null) {
+            auditLog.log("DELETE_ROLE", "system", item.getName(),
+                    "Role deleted with id " + item.getId());
         }
 
         return removed;
@@ -118,8 +125,10 @@ public class RoleManager implements Repository<Role>
     @Override
     public void clear()
     {
-        rolesById.clear();
-        rolesByName.clear();
+        synchronized (rolesLock) {
+            rolesById.clear();
+            rolesByName.clear();
+        }
     }
 
 
@@ -137,6 +146,16 @@ public class RoleManager implements Repository<Role>
             return new ArrayList<>();
 
         return rolesById.values().stream()
+                .filter(filter::test)
+                .collect(Collectors.toList());
+    }
+
+    public List<Role> findByFilterParallel(RoleFilter filter)
+    {
+        if (filter == null)
+            return new ArrayList<>();
+
+        return rolesById.values().parallelStream()
                 .filter(filter::test)
                 .collect(Collectors.toList());
     }
@@ -211,19 +230,21 @@ public class RoleManager implements Repository<Role>
         ValidationUtils.requireNonEmpty(newName, "newName");
         ValidationUtils.requireNonEmpty(newDescription, "newDescription");
 
-        Role role = rolesByName.get(currentName);
-        if (role == null) {
-            throw new IllegalArgumentException("Role with name '" + currentName + "' not found");
-        }
+        synchronized (rolesLock) {
+            Role role = rolesByName.get(currentName);
+            if (role == null) {
+                throw new IllegalArgumentException("Role with name '" + currentName + "' not found");
+            }
 
-        if (!currentName.equals(newName) && rolesByName.containsKey(newName)) {
-            throw new IllegalArgumentException("Role with name '" + newName + "' already exists");
-        }
+            if (!currentName.equals(newName) && rolesByName.containsKey(newName)) {
+                throw new IllegalArgumentException("Role with name '" + newName + "' already exists");
+            }
 
-        rolesByName.remove(currentName);
-        role.setName(newName);
-        role.setDescription(newDescription);
-        rolesByName.put(role.getName(), role);
+            rolesByName.remove(currentName);
+            role.setName(newName);
+            role.setDescription(newDescription);
+            rolesByName.put(role.getName(), role);
+        }
     }
 
     @Override
