@@ -23,6 +23,17 @@ public class ServiceCommands {
             ConsoleUtils.printSuccess("Saved to " + filename);
         });
 
+        parser.registerCommand("save-async", "Save data to file in background", (scanner, system) -> {
+            String filename = ConsoleUtils.promptString(scanner, "Filename", true);
+            system.saveSystemAsync(filename);
+            ConsoleUtils.printSuccess("Background save started for " + filename);
+        });
+
+        parser.registerCommand("report-users-async", "Generate user report in background", (scanner, system) -> {
+            system.generateUsersReportAsync();
+            ConsoleUtils.printSuccess("Background user report started");
+        });
+
         parser.registerCommand("load", "Load data from file", (scanner, system) -> {
             String filename = ConsoleUtils.promptString(scanner, "Filename", true);
             CommandSupport.loadSystem(system, filename);
