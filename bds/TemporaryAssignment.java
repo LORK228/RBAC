@@ -8,6 +8,7 @@ public class TemporaryAssignment extends AbstractRoleAssignment {
 
     private LocalDateTime expiresAt;
     private boolean autoRenew;
+    private volatile boolean inactive;
 
     private static final DateTimeFormatter ISO_FORMATTER = DateTimeFormatter.ISO_DATE_TIME;
     private static final DateTimeFormatter READABLE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
@@ -23,6 +24,7 @@ public class TemporaryAssignment extends AbstractRoleAssignment {
 
         this.expiresAt = expiresAt;
         this.autoRenew = autoRenew;
+        this.inactive = false;
     }
 
     public TemporaryAssignment(User user, Role role, AssignmentMetadata metadata,
@@ -42,7 +44,7 @@ public class TemporaryAssignment extends AbstractRoleAssignment {
 
     @Override
     public boolean isActive() {
-        return LocalDateTime.now().isBefore(expiresAt);
+        return !inactive && LocalDateTime.now().isBefore(expiresAt);
     }
 
     @Override
@@ -64,6 +66,14 @@ public class TemporaryAssignment extends AbstractRoleAssignment {
 
     public void setAutoRenew(boolean autoRenew) {
         this.autoRenew = autoRenew;
+    }
+
+    public void markInactive() {
+        this.inactive = true;
+    }
+
+    public boolean isMarkedInactive() {
+        return inactive;
     }
 
     public void extend(String newExpirationDate) {

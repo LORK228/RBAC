@@ -1,6 +1,10 @@
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.Future;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 public class RBACSystem implements AutoCloseable {
@@ -10,6 +14,8 @@ public class RBACSystem implements AutoCloseable {
     private final AuditLog auditLog;
     private final ReportGenerator reportGenerator;
     private final BackgroundExecutor backgroundExecutor;
+    private final ScheduledExecutorService scheduledExecutor;
+    private final AtomicBoolean schedulerStarted;
     private String currentUser;
 
     public RBACSystem() {
@@ -20,6 +26,8 @@ public class RBACSystem implements AutoCloseable {
         this.roleManager.setAssignmentManager(this.assignmentManager);
         this.reportGenerator = new ReportGenerator();
         this.backgroundExecutor = new BackgroundExecutor(Runtime.getRuntime().availableProcessors());
+        this.scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
+        this.schedulerStarted = new AtomicBoolean(false);
         this.currentUser = "system";
     }
 
@@ -100,6 +108,7 @@ public class RBACSystem implements AutoCloseable {
         AssignmentMetadata metadata = AssignmentMetadata.now(currentUser, "Initial bootstrap");
         PermanentAssignment assignment = new PermanentAssignment(admin, adminRole, metadata);
         assignmentManager.add(assignment);
+        startMaintenanceScheduler(5);
     }
 
     public Future<?> generateUsersReportAsync() {
@@ -111,6 +120,28 @@ public class RBACSystem implements AutoCloseable {
 
     public Future<?> saveSystemAsync(String filename) {
         return backgroundExecutor.submit(() -> CommandSupport.saveSystem(this, filename));
+    }
+
+    public void startMaintenanceScheduler(int intervalSeconds) {
+        if (intervalSeconds <= 0) {
+            throw new IllegalArgumentException("intervalSeconds must be > 0");
+        }
+        if (!schedulerStarted.compareAndSet(false, true)) {
+            return;
+        }
+        scheduledExecutor.scheduleAtFixedRate(this::runScheduledMaintenance, intervalSeconds, intervalSeconds, TimeUnit.SECONDS);
+    }
+
+    private void runScheduledMaintenance() {
+        int deactivated = assignmentManager.deactivateExpiredTemporaryAssignments();
+        String summary = String.format("users=%d roles=%d assignments=%d active=%d expired=%d deactivatedNow=%d",
+                userManager.count(),
+                roleManager.count(),
+                assignmentManager.count(),
+                assignmentManager.getActiveAssignments().size(),
+                assignmentManager.getExpiredAssignments().size(),
+                deactivated);
+        auditLog.log("SCHEDULED_MAINTENANCE", "scheduler", "assignments", summary);
     }
 
     public String generateStatistics() {
@@ -161,6 +192,7 @@ public class RBACSystem implements AutoCloseable {
 
     @Override
     public void close() {
+        scheduledExecutor.shutdownNow();
         backgroundExecutor.close();
         auditLog.close();
     }
