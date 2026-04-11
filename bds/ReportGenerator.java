@@ -1,6 +1,7 @@
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
@@ -20,27 +21,30 @@ public class ReportGenerator {
         StringBuilder sb = new StringBuilder();
         sb.append(FormatUtils.formatHeader("User Report")).append("\n\n");
 
-        List<User> users = userManager.findAll().stream()
+        List<User> users = userManager.findAll().parallelStream()
                 .sorted(Comparator.comparing(User::username))
                 .collect(Collectors.toList());
 
-        List<String[]> rows = new ArrayList<>();
-        for (User user : users) {
-            List<String> activeRoles = assignmentManager.findByUser(user).stream()
-                    .filter(RoleAssignment::isActive)
-                    .map(a -> a.role().getName())
-                    .distinct()
-                    .sorted()
-                    .collect(Collectors.toList());
+        List<String[]> rows = users.parallelStream()
+                .map(user -> {
+                    List<String> activeRoles = assignmentManager.findByUser(user).stream()
+                            .filter(RoleAssignment::isActive)
+                            .map(a -> a.role().getName())
+                            .distinct()
+                            .sorted()
+                            .collect(Collectors.toList());
 
-            String rolesStr = activeRoles.isEmpty() ? "-" : String.join(", ", activeRoles);
-            rows.add(new String[]{
-                    FormatUtils.truncate(user.username(), 20),
-                    FormatUtils.truncate(user.fullName(), 30),
-                    FormatUtils.truncate(user.email(), 35),
-                    FormatUtils.truncate(rolesStr, 40)
-            });
-        }
+                    String rolesStr = activeRoles.isEmpty() ? "-" : String.join(", ", activeRoles);
+                    return new AbstractMap.SimpleEntry<>(user.username(), new String[]{
+                            FormatUtils.truncate(user.username(), 20),
+                            FormatUtils.truncate(user.fullName(), 30),
+                            FormatUtils.truncate(user.email(), 35),
+                            FormatUtils.truncate(rolesStr, 40)
+                    });
+                })
+                .sorted(Map.Entry.comparingByKey())
+                .map(Map.Entry::getValue)
+                .collect(Collectors.toList());
 
         sb.append(FormatUtils.formatTable(
                 new String[]{"Username", "Full Name", "Email", "Roles"},
@@ -88,16 +92,14 @@ public class ReportGenerator {
             throw new IllegalArgumentException("Managers must not be null");
         }
 
-        List<User> users = userManager.findAll().stream()
+        List<User> users = userManager.findAll().parallelStream()
                 .sorted(Comparator.comparing(User::username))
                 .collect(Collectors.toList());
 
-        Set<String> resources = new LinkedHashSet<>();
-        for (User user : users) {
-            for (Permission permission : assignmentManager.getUserPermissions(user)) {
-                resources.add(permission.resource());
-            }
-        }
+        Set<String> resources = users.parallelStream()
+                .flatMap(user -> assignmentManager.getUserPermissions(user).stream())
+                .map(Permission::resource)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
 
         List<String> resourceColumns = new ArrayList<>(resources);
         resourceColumns.sort(String::compareTo);
@@ -112,24 +114,26 @@ public class ReportGenerator {
         }
         String[] headers = headersList.toArray(new String[0]);
 
-        List<String[]> rows = new ArrayList<>();
+        List<String[]> rows = users.parallelStream()
+                .map(user -> {
+                    List<String> row = new ArrayList<>();
+                    row.add(FormatUtils.truncate(user.username(), 20));
 
-        for (User user : users) {
-            List<String> row = new ArrayList<>();
-            row.add(FormatUtils.truncate(user.username(), 20));
+                    Map<String, List<String>> byResource = new TreeMap<>();
+                    for (Permission permission : assignmentManager.getUserPermissions(user)) {
+                        byResource.computeIfAbsent(permission.resource(), k -> new ArrayList<>()).add(permission.name());
+                    }
 
-            Map<String, List<String>> byResource = new TreeMap<>();
-            for (Permission permission : assignmentManager.getUserPermissions(user)) {
-                byResource.computeIfAbsent(permission.resource(), k -> new ArrayList<>()).add(permission.name());
-            }
-
-            for (String resource : resourceColumns) {
-                List<String> names = byResource.getOrDefault(resource, List.of());
-                String cell = names.isEmpty() ? "-" : names.stream().distinct().sorted().collect(Collectors.joining(","));
-                row.add(FormatUtils.truncate(cell, 30));
-            }
-            rows.add(row.toArray(new String[0]));
-        }
+                    for (String resource : resourceColumns) {
+                        List<String> names = byResource.getOrDefault(resource, List.of());
+                        String cell = names.isEmpty() ? "-" : names.stream().distinct().sorted().collect(Collectors.joining(","));
+                        row.add(FormatUtils.truncate(cell, 30));
+                    }
+                    return new AbstractMap.SimpleEntry<>(user.username(), row.toArray(new String[0]));
+                })
+                .sorted(Map.Entry.comparingByKey())
+                .map(Map.Entry::getValue)
+                .collect(Collectors.toList());
 
         sb.append(FormatUtils.formatTable(headers, rows));
         return sb.toString();
