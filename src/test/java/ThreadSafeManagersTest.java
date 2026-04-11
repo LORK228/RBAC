@@ -16,12 +16,12 @@ public class ThreadSafeManagersTest {
         UserManager userManager = new UserManager();
         int total = 100;
         runParallel(total, i -> {
-            String username = "u" + i;
+            String username = "usr" + i;
             userManager.add(User.validate(username, "User " + i, username + "@example.com"));
         });
 
         assertEquals(total, userManager.count());
-        assertEquals(total, userManager.findByFilterParallel(u -> u.username().startsWith("u")).size());
+        assertEquals(total, userManager.findByFilterParallel(u -> u.username().startsWith("usr")).size());
     }
 
     @Test
