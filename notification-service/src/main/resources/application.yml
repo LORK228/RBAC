@@ -1,0 +1,18 @@
+server:
+  port: 8083
+
+spring:
+  application:
+    name: notification-service
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/taxi}
+    username: ${SPRING_DATASOURCE_USERNAME:taxi}
+    password: ${SPRING_DATASOURCE_PASSWORD:taxi}
+
+workers:
+  pool-size: ${WORKER_POOL_SIZE:4}
+  idle-sleep-ms: ${WORKER_IDLE_SLEEP_MS:500}
+
+jwt:
+  secret: ${JWT_SECRET:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef}
+  expiration-minutes: 240
