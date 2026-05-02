@@ -3,7 +3,7 @@ WORKDIR /workspace
 COPY pom.xml .
 COPY trip-service/pom.xml trip-service/pom.xml
 COPY trip-service/src trip-service/src
-RUN mvn -pl trip-service -am -DskipTests package
+RUN mvn -f trip-service/pom.xml -DskipTests package
 
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app

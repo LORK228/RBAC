@@ -71,7 +71,6 @@ services:
       USER_SERVICE_URL: http://user-service:8081
       NOTIFICATION_SERVICE_URL: http://notification-service:8083
       JWT_SECRET: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
-      SERVICE_TOKEN: ""
     ports:
       - "8082:8082"
     depends_on:

@@ -3,7 +3,7 @@ WORKDIR /workspace
 COPY pom.xml .
 COPY notification-service/pom.xml notification-service/pom.xml
 COPY notification-service/src notification-service/src
-RUN mvn -pl notification-service -am -DskipTests package
+RUN mvn -f notification-service/pom.xml -DskipTests package
 
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
