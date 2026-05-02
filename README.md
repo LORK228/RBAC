@@ -17,6 +17,14 @@ Infrastructure is started by Docker Compose:
 docker compose up --build
 ```
 
+Swagger UI:
+
+- User Service: `http://localhost:8081/swagger-ui/index.html`
+- Trip Service: `http://localhost:8082/swagger-ui/index.html`
+- Notification Service: `http://localhost:8083/swagger-ui/index.html`
+
+For protected endpoints, create a token in User Service with `POST /auth/token`, click `Authorize` in Swagger UI, and paste the token as `Bearer <token>`.
+
 All services use the same JWT secret from `docker-compose.yml`. Get a token from User Service:
 
 ```bash
