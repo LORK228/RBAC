@@ -12,6 +12,8 @@ spring:
 integrations:
   user-service-url: ${USER_SERVICE_URL:http://localhost:8081}
   notification-service-url: ${NOTIFICATION_SERVICE_URL:http://localhost:8083}
+  connect-timeout-ms: ${HTTP_CONNECT_TIMEOUT_MS:1500}
+  read-timeout-ms: ${HTTP_READ_TIMEOUT_MS:3000}
 
 pricing:
   tariff-per-km: ${TARIFF_PER_KM:37.50}

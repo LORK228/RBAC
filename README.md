@@ -107,3 +107,31 @@ LIMIT 1
 ```
 
 Notification workers use the same idea when claiming `PENDING` tasks. Each worker updates one task to `PROCESSING` before sending, so two threads cannot process the same row concurrently. On shutdown the pool stops accepting new work, waits up to 10 seconds, then interrupts the remaining workers.
+
+## Failure Handling
+
+Trip Service uses HTTP connect/read timeouts for calls to User Service and Notification Service. Temporary network errors are retried 3 times with exponential backoff. If the remote service is still unavailable, the API returns `503 Service Unavailable` instead of crashing with an internal error.
+
+Business failures are returned separately:
+
+- no available drivers: `409 Conflict`
+- missing passenger or trip: `404 Not Found`
+- remote service unavailable or connection timeout: `503 Service Unavailable`
+
+## Automated Tests
+
+Run tests without installing Maven locally:
+
+```bash
+docker run --rm -v ${PWD}:/workspace -w /workspace maven:3.9.9-eclipse-temurin-21 mvn test
+```
+
+Covered scenarios:
+
+- successful trip creation with driver assignment, price calculation and notification tasks;
+- User Service unavailable during trip creation;
+- no available drivers;
+- completed trip releases the driver and queues notifications;
+- completed trip can be rated;
+- notification worker sends a claimed task;
+- notification worker retries a task after a simulated send failure.
