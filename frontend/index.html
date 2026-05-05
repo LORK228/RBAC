@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Taxi Microservices Dashboard</title>
+<style>
+* { box-sizing: border-box; 
+    margin: 0; 
+    padding: 0; 
+}
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+       background: #1a2332; 
+       color: #e2e8f0; 
+       min-height: 100vh; 
+       padding: 20px; 
+}
+.container { max-width: 1440px; 
+             margin: 0 auto; 
+}
+h1 { font-size: 22px; 
+     font-weight: 600; 
+     margin-bottom: 20px; 
+     display: flex; 
+     align-items: center; 
+     gap: 10px; 
+}
+h1 small { font-size: 13px; 
+           font-weight: 400; 
+           color: #64748b; 
+}
+.token-bar { background: #1e293b; 
+             border: 1px solid #334155; 
+             border-radius: 10px; 
+             padding: 14px 18px; 
+             margin-bottom: 20px; 
+             display: flex; 
+             align-items: center; 
+             gap: 10px; 
+             flex-wrap: wrap; 
+}
+.token-bar label { font-size: 13px; 
+                   font-weight: 500; 
+                   color: #94a3b8; 
+}
+.token-bar input, .token-bar select { background: #0f172a; 
+                                      border: 1px solid #334155; 
+                                      border-radius: 6px; 
+                                      padding: 6px 10px; 
+                                      color: #e2e8f0; 
+                                      font-size: 13px; 
+                                      outline: none; 
+}
+.token-bar input:focus, .token-bar select:focus { border-color: #3b82f6; }
+.token-bar .token-display { flex: 1; 
+                            min-width: 200px; 
+                            background: #0f172a; 
+                            border: 1px solid #334155; 
+                            border-radius: 6px; 
+                            padding: 6px 10px; 
+                            font-size: 11px; 
+                            font-family: monospace; 
+                            color: #64748b; 
+                            overflow: hidden; 
+                            text-overflow: ellipsis; 
+                            white-space: nowrap; 
+}
+.grid { display: grid; 
+        grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); 
+        gap: 16px; 
+}
+.card { background: #1e293b; 
+        border: 1px solid #334155; 
+        border-radius: 10px; 
+        overflow: hidden; 
+}
+.card-header { padding: 12px 16px; 
+               font-size: 15px; 
+               font-weight: 600; 
+               border-bottom: 1px solid #334155; 
+               display: flex; 
+               align-items: center; 
+               gap: 8px; 
+}
+.card-body { padding: 12px 16px 16px; }
+.section { margin-bottom: 12px; }
+.section:last-child { margin-bottom: 0; }
+.section-title { font-size: 12px; 
+                 font-weight: 600; 
+                 text-transform: uppercase; 
+                 color: #64748b; 
+                 margin-bottom: 6px; 
+                 letter-spacing: 0.5px; 
+}
+.form-row { display: flex; 
+            gap: 6px;
+            margin-bottom: 6px; 
+            flex-wrap: wrap; 
+}
+.form-row input, .form-row select { flex: 1; 
+                                    min-width: 80px; 
+                                    background: #0f172a; 
+                                    border: 1px solid #334155; 
+                                    border-radius: 5px; 
+                                    padding: 5px 8px; 
+                                    color: #e2e8f0; 
+                                    font-size: 12px; 
+                                    outline: none; 
+}
+.form-row input:focus, .form-row select:focus { border-color: #3b82f6; }
+.form-row input::placeholder { color: #475569; }
+.btn { background: #334155; 
+       border: none; 
+       border-radius: 5px; 
+       padding: 5px 12px; 
+       color: #e2e8f0; 
+       font-size: 12px; 
+       cursor: pointer; 
+       white-space: nowrap; 
+       transition: background .15s; 
+}
+.btn:hover { background: #475569; }
+.btn-primary { background: #2563eb; }
+.btn-primary:hover { background: #3b82f6; }
+.btn-success { background: #16a34a; }
+.btn-success:hover { background: #22c55e; }
+.btn-warning { background: #d97706; }
+.btn-warning:hover { background: #f59e0b; }
+.btn-danger { background: #dc2626; }
+.btn-danger:hover { background: #ef4444; }
+.btn-sm { padding: 3px 8px; 
+  font-size: 11px; }
+.result { margin-top: 6px; 
+          background: #0f172a; 
+          border: 1px solid #1e293b; 
+          border-radius: 5px; 
+          padding: 8px 10px; 
+          font-family: monospace; 
+          font-size: 11px; 
+          line-height: 1.5; 
+          max-height: 180px; 
+          overflow: auto; 
+          white-space: pre-wrap; 
+          word-break: break-all; 
+}
+.result .empty { color: #475569; 
+                 font-style: italic; 
+}
+.result .error { color: #ef4444; }
+.result .key { color: #818cf8; }
+.result .string { color: #34d399; }
+.result .number { color: #fbbf24; }
+.result .null { color: #64748b; }
+.tag { display: inline-block; 
+       font-size: 10px; 
+       padding: 1px 6px; 
+       border-radius: 3px; 
+       font-weight: 600; 
+       font-family: monospace; 
+}
+.tag-available { background: #052e16; 
+                 color: #4ade80; 
+                 border: 1px solid #166534; 
+}
+.tag-busy { background: #1c1917; 
+            color: #fb923c; 
+            border: 1px solid #431407; 
+}
+.tag-offline { background: #1c1917; 
+               color: #94a3b8; 
+               border: 1px solid #334155; 
+}
+.tag-created { background: #172554; 
+               color: #60a5fa; 
+               border: 1px solid #1e3a5f; 
+}
+.tag-completed { background: #052e16; 
+                 color: #4ade80; 
+                 border: 1px solid #166534; 
+}
+.tag-cancelled { background: #1c1917; 
+                 color: #f87171; 
+                 border: 1px solid #7f1d1d; 
+}
+.tag-pending { background: #1c1917; 
+               color: #fbbf24; 
+               border: 1px solid #713f12; 
+}
+.tag-sent { background: #052e16; 
+            color: #4ade80; 
+            border: 1px solid #166534; 
+}
+.tag-failed { background: #1c1917; 
+              color: #f87171; 
+              border: 1px solid #7f1d1d; 
+}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>Taxi Microservices Dashboard</h1>
+<div style="margin-bottom:12px;font-size:13px;color:#64748b;">user:8081 trip:8082 notification:8083</div>
+
+<div class="token-bar">
+  <label>Subject</label>
+  <input id="tokenSubject" value="admin" style="width:90px">
+  <label>Role</label>
+  <select id="tokenRole"><option value="ADMIN">ADMIN</option><option value="USER">USER</option></select>
+  <button class="btn" onclick="generateToken()">Generate</button>
+  <label>Token</label>
+  <span class="token-display" id="tokenDisplay">generate or paste token</span>
+  <button class="btn" onclick="copyToken()">Copy</button>
+  <button class="btn" onclick="clearToken()">Clear</button>
+</div>
+
+<div class="grid">
+  <div class="card">
+    <div class="card-header"> Users</div>
+    <div class="card-body">
+      <div class="section">
+        <div class="section-title">Create Passenger</div>
+        <div class="form-row">
+          <input id="pName" placeholder="Name"><input id="pEmail" placeholder="Email"><input id="pPhone" placeholder="Phone">
+          <button class="btn btn-sm" onclick="createPassenger()">Create</button>
+        </div>
+      </div>
+      <div class="section">
+        <div class="section-title">Get Passenger</div>
+        <div class="form-row">
+          <input id="getPassId" placeholder="Passenger ID" type="number" min="1">
+          <button class="btn btn-sm" onclick="getPassenger()">Get</button>
+        </div>
+        <div id="resultUsers" class="result"><span class="empty">Actions will appear here</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"> Drivers</div>
+    <div class="card-body">
+      <div class="section">
+        <div class="section-title">Create Driver</div>
+        <div class="form-row">
+          <input id="dName" placeholder="Name"><input id="dEmail" placeholder="Email"><input id="dPhone" placeholder="Phone">
+        </div>
+        <div class="form-row">
+          <input id="dLicense" placeholder="License" style="flex:2">
+          <button class="btn" onclick="createDriver()">Create</button>
+        </div>
+      </div>
+      <div class="section">
+        <div class="section-title">Actions</div>
+        <div class="form-row">
+          <button class="btn btn-sm" onclick="listAvailableDrivers()">Available</button>
+          <button class="btn btn-sm" onclick="allocateDriver()">Allocate</button>
+        </div>
+        <div class="form-row">
+          <input id="driverId" placeholder="Driver ID" type="number" min="1" style="flex:1">
+          <select id="driverStatus"><option value="">Status</option><option value="AVAILABLE">AVAILABLE</option><option value="BUSY">BUSY</option><option value="OFFLINE">OFFLINE</option></select>
+          <button class="btn btn-sm" onclick="getDriver()">Get</button>
+          <button class="btn btn-sm" onclick="updateDriverStatus()">Set</button>
+        </div>
+        <div id="resultDrivers" class="result"><span class="empty">Actions will appear here</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"> Trips</div>
+    <div class="card-body">
+      <div class="section">
+        <div class="section-title">Create Trip</div>
+        <div class="form-row">
+          <input id="tPassId" placeholder="Passenger ID" type="number" min="1" style="flex:1">
+          <input id="tOrigin" placeholder="Origin" style="flex:1">
+          <input id="tDest" placeholder="Destination" style="flex:1">
+        </div>
+        <div class="form-row">
+          <input id="tDist" placeholder="Distance km" type="number" min="0.1" step="0.1" style="flex:1">
+          <button class="btn" onclick="createTrip()">Create</button>
+        </div>
+      </div>
+      <div class="section">
+        <div class="section-title">Actions</div>
+        <div class="form-row">
+          <input id="tripId" placeholder="Trip ID" type="number" min="1" style="flex:1">
+          <button class="btn btn-sm" onclick="getTrip()">Get</button>
+          <input id="tripPassId" placeholder="Passenger ID" type="number" min="1" style="flex:1">
+          <button class="btn btn-sm" onclick="getTripHistory()">History</button>
+        </div>
+        <div class="form-row">
+          <select id="tripStatusSelect"><option value="">Status</option><option value="ACCEPTED">ACCEPTED</option><option value="STARTED">STARTED</option><option value="COMPLETED">COMPLETED</option><option value="CANCELLED">CANCELLED</option></select>
+          <button class="btn btn-sm" onclick="updateTripStatus()">Set Status</button>
+          <input id="tripRating" placeholder="Rate 1-5" type="number" min="1" max="5" style="flex:0.5">
+          <button class="btn btn-sm" onclick="rateTrip()">Rate</button>
+        </div>
+        <div class="form-row">
+          <input id="statDate" type="date" style="flex:1">
+          <button class="btn btn-sm" onclick="getStatistics()">Stats</button>
+        </div>
+        <div id="resultTrips" class="result"><span class="empty">Actions will appear here</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"> Notifications</div>
+    <div class="card-body">
+      <div class="section">
+        <div class="section-title">By Trip ID</div>
+        <div class="form-row">
+          <input id="notifTripId" placeholder="Trip ID" type="number" min="1">
+          <button class="btn btn-sm" onclick="getNotifications()">Search</button>
+        </div>
+        <div id="resultNotif" class="result"><span class="empty">Actions will appear here</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+const USER = 'http://localhost:8081';
+const TRIP = 'http://localhost:8082';
+const NOTIF = 'http://localhost:8083';
+let token = localStorage.getItem('taxi_token') || '';
+
+function getToken() { return token; }
+function setToken(t) { token = t; localStorage.setItem('taxi_token', t); }
+document.addEventListener('DOMContentLoaded', () => {
+  if (token) document.getElementById('tokenDisplay').textContent = token.substring(0, 60) + '...';
+  if (location.protocol === 'file:') {
+    document.getElementById('protocolWarn').style.display = 'flex';
+  }
+});
+
+function copyToken() { if (token) navigator.clipboard.writeText(token); }
+function clearToken() { setToken(''); document.getElementById('tokenDisplay').textContent = '<generate or paste token>'; }
+
+function showResult(elId, data) {
+  const el = document.getElementById(elId);
+  if (data === null || data === undefined || (Array.isArray(data) && data.length === 0)) {
+    el.innerHTML = '<span class="empty">No data</span>';
+    return;
+  }
+  el.innerHTML = syntaxHighlight(data);
+}
+
+function showError(elId, err) {
+  document.getElementById(elId).innerHTML = '<span class="error">' + escapeHtml(String(err)) + '</span>';
+}
+
+function escapeHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+function syntaxHighlight(obj) {
+  let json = JSON.stringify(obj, null, 2);
+  json = escapeHtml(json);
+  json = json.replace(/"([^"]+)":/g, '<span class="key">"$1"</span>:');
+  json = json.replace(/: "([^"]+)"/g, (m, v) => ': <span class="string">"' + escapeHtml(v) + '"</span>');
+  json = json.replace(/: (\d+\.?\d*)/g, ': <span class="number">$1</span>');
+  json = json.replace(/: (null|true|false)/g, ': <span class="null">$1</span>');
+  return json;
+}
+
+async function api(base, path, opts = {}) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (opts.auth !== false && token) headers['Authorization'] = 'Bearer ' + token;
+  let res;
+  try {
+    res = await fetch(base + path, { method: opts.method || 'GET', headers, body: opts.body ? JSON.stringify(opts.body) : undefined });
+  } catch (e) {
+    const hint = location.protocol === 'file:' ? ' (file:// not supported - serve via HTTP: npx serve frontend)' : '';
+    throw new Error('Failed to connect to ' + base + path + hint + ': ' + e.message);
+  }
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(res.status + ' ' + res.statusText + (text ? ': ' + text.substring(0, 200) : ''));
+  }
+  const ct = res.headers.get('content-type') || '';
+  if (ct.includes('application/json')) return res.json();
+  return res.text();
+}
+
+async function generateToken() {
+  const subject = document.getElementById('tokenSubject').value.trim();
+  const role = document.getElementById('tokenRole').value;
+  if (!subject) return showError('resultUsers', 'Subject is required');
+  try {
+    const r = await api(USER, '/auth/token', { method: 'POST', body: { subject, role }, auth: false });
+    setToken(r.token);
+    document.getElementById('tokenDisplay').textContent = r.token.substring(0, 60) + '...';
+    document.getElementById('resultUsers').innerHTML = '<span class="empty">Token generated. Ready to use.</span>';
+  } catch (e) { showError('resultUsers', e); }
+}
+
+async function createPassenger() {
+  const name = document.getElementById('pName').value.trim();
+  const email = document.getElementById('pEmail').value.trim();
+  const phone = document.getElementById('pPhone').value.trim();
+  if (!name || !email || !phone) return showError('resultUsers', 'All fields required');
+  try {
+    const r = await api(USER, '/passengers', { method: 'POST', body: { name, email, phone }, auth: false });
+    showResult('resultUsers', r);
+  } catch (e) { showError('resultUsers', e); }
+}
+
+async function getPassenger() {
+  const id = document.getElementById('getPassId').value.trim();
+  if (!id) return showError('resultUsers', 'Passenger ID required');
+  try {
+    const r = await api(USER, '/passengers/' + id);
+    showResult('resultUsers', r);
+  } catch (e) { showError('resultUsers', e); }
+}
+
+async function createDriver() {
+  const name = document.getElementById('dName').value.trim();
+  const email = document.getElementById('dEmail').value.trim();
+  const phone = document.getElementById('dPhone').value.trim();
+  const license = document.getElementById('dLicense').value.trim();
+  if (!name || !email || !phone || !license) return showError('resultDrivers', 'All fields required');
+  try {
+    const r = await api(USER, '/drivers', { method: 'POST', body: { name, email, phone, licenseNumber: license }, auth: false });
+    showResult('resultDrivers', r);
+  } catch (e) { showError('resultDrivers', e); }
+}
+
+async function listAvailableDrivers() {
+  try {
+    const r = await api(USER, '/drivers/available');
+    showResult('resultDrivers', r);
+  } catch (e) { showError('resultDrivers', e); }
+}
+
+async function allocateDriver() {
+  try {
+    const r = await api(USER, '/drivers/allocate', { method: 'POST' });
+    showResult('resultDrivers', r);
+  } catch (e) { showError('resultDrivers', e); }
+}
+
+async function getDriver() {
+  const id = document.getElementById('driverId').value.trim();
+  if (!id) return showError('resultDrivers', 'Driver ID required');
+  try {
+    const r = await api(USER, '/drivers/' + id);
+    showResult('resultDrivers', r);
+  } catch (e) { showError('resultDrivers', e); }
+}
+
+async function updateDriverStatus() {
+  const id = document.getElementById('driverId').value.trim();
+  const status = document.getElementById('driverStatus').value;
+  if (!id || !status) return showError('resultDrivers', 'Driver ID and status required');
+  try {
+    const r = await api(USER, '/drivers/' + id + '/status', { method: 'PATCH', body: { status } });
+    showResult('resultDrivers', r);
+  } catch (e) { showError('resultDrivers', e); }
+}
+
+async function createTrip() {
+  const passengerId = parseInt(document.getElementById('tPassId').value);
+  const origin = document.getElementById('tOrigin').value.trim();
+  const destination = document.getElementById('tDest').value.trim();
+  const distanceKm = parseFloat(document.getElementById('tDist').value);
+  if (!passengerId || !origin || !destination || !distanceKm) return showError('resultTrips', 'All fields required');
+  try {
+    const r = await api(TRIP, '/trips', { method: 'POST', body: { passengerId, origin, destination, distanceKm } });
+    showResult('resultTrips', r);
+  } catch (e) { showError('resultTrips', e); }
+}
+
+async function getTrip() {
+  const id = document.getElementById('tripId').value.trim();
+  if (!id) return showError('resultTrips', 'Trip ID required');
+  try {
+    const r = await api(TRIP, '/trips/' + id);
+    showResult('resultTrips', r);
+  } catch (e) { showError('resultTrips', e); }
+}
+
+async function getTripHistory() {
+  const id = document.getElementById('tripPassId').value.trim();
+  if (!id) return showError('resultTrips', 'Passenger ID required');
+  try {
+    const r = await api(TRIP, '/trips?passenger_id=' + id);
+    showResult('resultTrips', r);
+  } catch (e) { showError('resultTrips', e); }
+}
+
+async function updateTripStatus() {
+  const id = document.getElementById('tripId').value.trim();
+  const status = document.getElementById('tripStatusSelect').value;
+  if (!id || !status) return showError('resultTrips', 'Trip ID and status required');
+  try {
+    const r = await api(TRIP, '/trips/' + id + '/status', { method: 'PATCH', body: { status } });
+    showResult('resultTrips', r);
+  } catch (e) { showError('resultTrips', e); }
+}
+
+async function rateTrip() {
+  const id = document.getElementById('tripId').value.trim();
+  const rating = parseInt(document.getElementById('tripRating').value);
+  if (!id || !rating || rating < 1 || rating > 5) return showError('resultTrips', 'Trip ID and rating (1-5) required');
+  try {
+    const r = await api(TRIP, '/trips/' + id + '/rating', { method: 'PATCH', body: { rating } });
+    showResult('resultTrips', r);
+  } catch (e) { showError('resultTrips', e); }
+}
+
+async function getStatistics() {
+  const date = document.getElementById('statDate').value;
+  if (!date) return showError('resultTrips', 'Date required');
+  try {
+    const r = await api(TRIP, '/trips/statistics?date=' + date);
+    showResult('resultTrips', r);
+  } catch (e) { showError('resultTrips', e); }
+}
+
+async function getNotifications() {
+  const tripId = document.getElementById('notifTripId').value.trim();
+  if (!tripId) return showError('resultNotif', 'Trip ID required');
+  try {
+    const r = await api(NOTIF, '/notifications?trip_id=' + tripId);
+    showResult('resultNotif', r);
+  } catch (e) { showError('resultNotif', e); }
+}
+</script>
+</body>
+</html>
