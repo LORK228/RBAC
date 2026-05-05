@@ -14,13 +14,16 @@ import java.util.List;
 class TripService {
     private final TripRepository repository;
     private final IntegrationClient integrationClient;
+    private final TripWebSocketHandler webSocketHandler;
     private final BigDecimal tariffPerKm;
 
     TripService(TripRepository repository,
                 IntegrationClient integrationClient,
+                TripWebSocketHandler webSocketHandler,
                 @Value("${pricing.tariff-per-km}") BigDecimal tariffPerKm) {
         this.repository = repository;
         this.integrationClient = integrationClient;
+        this.webSocketHandler = webSocketHandler;
         this.tariffPerKm = tariffPerKm;
     }
 
@@ -33,6 +36,7 @@ class TripService {
         BigDecimal price = distance.multiply(tariffPerKm).setScale(2, RoundingMode.HALF_UP);
 
         Trip trip = repository.create(passenger.id(), driver.id(), request.origin(), request.destination(), distance, price);
+        webSocketHandler.broadcastStatusChange(trip.id(), trip.status());
         notifyPassenger(trip, "Trip " + trip.id() + " created. Driver " + driver.name() + " assigned.");
         notifyDriver(trip, "Trip " + trip.id() + " assigned from " + trip.origin() + " to " + trip.destination() + ".");
         return trip;
@@ -51,6 +55,8 @@ class TripService {
         Trip before = get(id);
         Trip updated = repository.updateStatus(id, status)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Trip not found"));
+
+        webSocketHandler.broadcastStatusChange(id, status);
 
         if (status == TripStatus.COMPLETED || status == TripStatus.CANCELLED) {
             integrationClient.updateDriverStatus(before.driverId(), "AVAILABLE");

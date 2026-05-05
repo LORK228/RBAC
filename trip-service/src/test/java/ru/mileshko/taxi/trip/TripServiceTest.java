@@ -24,7 +24,8 @@ import static org.mockito.Mockito.when;
 class TripServiceTest {
     private final TripRepository repository = mock(TripRepository.class);
     private final IntegrationClient integrationClient = mock(IntegrationClient.class);
-    private final TripService service = new TripService(repository, integrationClient, BigDecimal.valueOf(40));
+    private final TripWebSocketHandler webSocketHandler = mock(TripWebSocketHandler.class);
+    private final TripService service = new TripService(repository, integrationClient, webSocketHandler, BigDecimal.valueOf(40));
 
     @Test
     void createsTripAssignsDriverCalculatesPriceAndQueuesNotifications() {
