@@ -11,6 +11,24 @@ Infrastructure is started by Docker Compose:
 - PostgreSQL stores passengers, drivers, trips and notification tasks.
 - Redis caches the set of available driver ids.
 
+## Frontend
+
+A Next.js admin panel at [`frontend/`](frontend) that interacts with all three microservices.
+
+```bash
+# 1. Make sure the backend is running
+docker compose up --build
+
+# 2. In a separate terminal, start the frontend
+cd frontend
+npm install
+npm run dev
+```
+
+The app is available at `http://localhost:3000`. Proxy rules in `next.config.mjs` forward API calls to the corresponding Java services.
+
+Environment variables are configured in [`frontend/.env.local`](frontend/.env.local) – JWT secret and service URLs point to `localhost:8081`–`8083` by default.
+
 ## Run
 
 ```bash
