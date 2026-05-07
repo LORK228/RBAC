@@ -19,4 +19,8 @@ class NotificationService {
     List<NotificationTask> findByTrip(long tripId) {
         return repository.findByTrip(tripId);
     }
+
+    List<NotificationTask> findByRecipient(String recipientType, long recipientId) {
+        return repository.findByRecipient(recipientType, recipientId);
+    }
 }

@@ -35,6 +35,15 @@ class NotificationRepository {
                 """, mapper, tripId);
     }
 
+    List<NotificationTask> findByRecipient(String recipientType, long recipientId) {
+        return jdbc.query("""
+                SELECT id, trip_id, recipient_type, recipient_id, message, status, attempts, created_at, updated_at
+                FROM notification_tasks
+                WHERE recipient_type = ? AND recipient_id = ?
+                ORDER BY created_at DESC
+                """, mapper, recipientType, recipientId);
+    }
+
     Optional<NotificationTask> claimNext() {
         List<NotificationTask> tasks = jdbc.query("""
                 UPDATE notification_tasks

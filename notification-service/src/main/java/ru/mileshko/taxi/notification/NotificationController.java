@@ -26,4 +26,11 @@ class NotificationController {
     List<NotificationTask> findByTrip(@RequestParam("trip_id") long tripId) {
         return service.findByTrip(tripId);
     }
+
+    @GetMapping(value = "/notifications", params = {"recipient_type", "recipient_id"})
+    List<NotificationTask> findByRecipient(
+            @RequestParam("recipient_type") String recipientType,
+            @RequestParam("recipient_id") long recipientId) {
+        return service.findByRecipient(recipientType, recipientId);
+    }
 }

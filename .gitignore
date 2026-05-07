@@ -29,3 +29,7 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+
+### node_modules ###
+/frontend/node_modules/
+/frontend/.next/*
