@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
-import { createUser, findUserByEmail } from "@/lib/db";
 import { signToken } from "@/lib/jwt";
+import { registerUserAuth, checkEmailExists } from "@/lib/user-service";
 
 function hashPassword(password: string): string {
   return crypto.createHash("sha256").update(password).digest("hex");
@@ -31,7 +31,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Role must be 'passenger' or 'driver'" }, { status: 400 });
     }
 
-    if (findUserByEmail(email)) {
+    if (await checkEmailExists(email)) {
       return NextResponse.json({ error: "Email already registered" }, { status: 409 });
     }
 
@@ -68,14 +68,13 @@ export async function POST(request: Request) {
     }
 
     const passwordHash = hashPassword(password);
-    const user = createUser(email, name, role, javaUserId);
-    (user as any).passwordHash = passwordHash;
+    const authUser = await registerUserAuth(email, passwordHash, name, role, javaUserId);
 
-    const token = signToken({ userId: user.id, email: user.email, role: user.role });
+    const token = signToken({ userId: authUser.id, email: authUser.email, role: authUser.role });
 
     return NextResponse.json({
       token,
-      user: { id: user.id, email: user.email, name: user.name, role: user.role },
+      user: { id: authUser.id, email: authUser.email, name: authUser.name, role: authUser.role },
     });
   } catch (error) {
     console.error("Register error:", error);

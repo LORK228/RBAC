@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
-import { findUserByEmail } from "@/lib/db";
 import { signToken } from "@/lib/jwt";
+import { loginUserAuth } from "@/lib/user-service";
 
 function hashPassword(password: string): string {
   return crypto.createHash("sha256").update(password).digest("hex");
@@ -15,15 +15,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Email and password are required" }, { status: 400 });
     }
 
-    const user = findUserByEmail(email);
-    if (!user) {
-      return NextResponse.json({ error: "Invalid email or password" }, { status: 401 });
-    }
-
     const passwordHash = hashPassword(password);
-    if ((user as any).passwordHash !== passwordHash) {
-      return NextResponse.json({ error: "Invalid email or password" }, { status: 401 });
-    }
+    const user = await loginUserAuth(email, passwordHash);
 
     const token = signToken({ userId: user.id, email: user.email, role: user.role });
 
@@ -33,6 +26,6 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error("Login error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "Invalid email or password" }, { status: 401 });
   }
 }

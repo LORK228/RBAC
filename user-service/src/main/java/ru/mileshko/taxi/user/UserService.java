@@ -71,6 +71,35 @@ class UserService {
         return driver;
     }
 
+    UserAuthResponse createUserAuth(CreateUserAuthRequest request) {
+        if (repository.findUserAuthByEmail(request.email()).isPresent()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already registered");
+        }
+        UserAuth user = repository.createUserAuth(request);
+        return new UserAuthResponse(user.id(), user.email(), user.name(), user.role(), user.javaUserId());
+    }
+
+    UserAuthResponse login(LoginRequest request) {
+        UserAuth user = repository.findUserAuthByEmail(request.email())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid email or password"));
+        if (!user.passwordHash().equals(request.passwordHash())) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid email or password");
+        }
+        return new UserAuthResponse(user.id(), user.email(), user.name(), user.role(), user.javaUserId());
+    }
+
+    UserAuthResponse getUserAuth(long id) {
+        UserAuth user = repository.findUserAuthById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+        return new UserAuthResponse(user.id(), user.email(), user.name(), user.role(), user.javaUserId());
+    }
+
+    UserAuthResponse getUserAuthByEmail(String email) {
+        UserAuth user = repository.findUserAuthByEmail(email)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+        return new UserAuthResponse(user.id(), user.email(), user.name(), user.role(), user.javaUserId());
+    }
+
     private void refreshDriverCache(Driver driver) {
         String id = String.valueOf(driver.id());
         if (driver.status() == DriverStatus.AVAILABLE) {

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyToken } from "@/lib/jwt";
-import { createRide, findRidesByUserId, findPendingRides, findRidesByDriverId, findUserById } from "@/lib/db";
+import { createRide, findRidesByUserId, findPendingRides, findRidesByDriverId } from "@/lib/db";
+import { getUserAuthById } from "@/lib/user-service";
 
 function getUserId(request: NextRequest): number | null {
   const authHeader = request.headers.get("authorization");
@@ -17,8 +18,13 @@ export async function POST(request: NextRequest) {
   const userId = getUserId(request);
   if (!userId) return unauthorized();
 
-  const user = findUserById(userId);
-  if (!user || user.role !== "passenger") {
+  let user;
+  try {
+    user = await getUserAuthById(userId);
+  } catch {
+    return NextResponse.json({ error: "User not found" }, { status: 404 });
+  }
+  if (user.role !== "passenger") {
     return NextResponse.json({ error: "Only passengers can create rides" }, { status: 403 });
   }
 
@@ -41,8 +47,12 @@ export async function GET(request: NextRequest) {
   const userId = getUserId(request);
   if (!userId) return unauthorized();
 
-  const user = findUserById(userId);
-  if (!user) return unauthorized();
+  let user;
+  try {
+    user = await getUserAuthById(userId);
+  } catch {
+    return NextResponse.json({ error: "User not found" }, { status: 404 });
+  }
 
   const { searchParams } = new URL(request.url);
   const filter = searchParams.get("filter");

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { verifyToken } from "@/lib/jwt";
-import { findUserById } from "@/lib/db";
+import { getUserAuthById } from "@/lib/user-service";
 
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization");
@@ -13,12 +13,12 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Invalid token" }, { status: 401 });
   }
 
-  const user = findUserById(payload.userId);
-  if (!user) {
+  try {
+    const user = await getUserAuthById(payload.userId);
+    return NextResponse.json({
+      user: { id: user.id, email: user.email, name: user.name, role: user.role },
+    });
+  } catch {
     return NextResponse.json({ error: "User not found" }, { status: 404 });
   }
-
-  return NextResponse.json({
-    user: { id: user.id, email: user.email, name: user.name, role: user.role },
-  });
 }

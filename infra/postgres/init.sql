@@ -48,6 +48,17 @@ CREATE TABLE IF NOT EXISTS notification_tasks (
     CONSTRAINT notification_status_check CHECK (status IN ('PENDING', 'PROCESSING', 'SENT', 'FAILED'))
 );
 
+CREATE TABLE IF NOT EXISTS users (
+    id BIGSERIAL PRIMARY KEY,
+    email VARCHAR(180) NOT NULL UNIQUE,
+    password_hash VARCHAR(64) NOT NULL,
+    name VARCHAR(120) NOT NULL,
+    role VARCHAR(30) NOT NULL,
+    java_user_id BIGINT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CONSTRAINT users_role_check CHECK (role IN ('passenger', 'driver'))
+);
+
 CREATE INDEX IF NOT EXISTS idx_trips_status ON trips(status);
 CREATE INDEX IF NOT EXISTS idx_trips_passenger_id ON trips(passenger_id);
 CREATE INDEX IF NOT EXISTS idx_notification_tasks_status ON notification_tasks(status);

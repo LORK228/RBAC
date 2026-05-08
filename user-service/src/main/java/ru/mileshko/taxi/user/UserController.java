@@ -60,4 +60,24 @@ class UserController {
     Driver updateDriverStatus(@PathVariable long id, @Valid @RequestBody UpdateDriverStatusRequest request) {
         return service.updateStatus(id, DriverStatus.valueOf(request.status()));
     }
+
+    @PostMapping("/auth/register")
+    UserAuthResponse register(@Valid @RequestBody CreateUserAuthRequest request) {
+        return service.createUserAuth(request);
+    }
+
+    @PostMapping("/auth/login")
+    UserAuthResponse login(@Valid @RequestBody LoginRequest request) {
+        return service.login(request);
+    }
+
+    @GetMapping("/auth/users/{id}")
+    UserAuthResponse getUserAuth(@PathVariable long id) {
+        return service.getUserAuth(id);
+    }
+
+    @GetMapping("/auth/users/by-email/{email}")
+    UserAuthResponse getUserAuthByEmail(@PathVariable String email) {
+        return service.getUserAuthByEmail(email);
+    }
 }

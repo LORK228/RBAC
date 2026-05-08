@@ -1,48 +1,17 @@
-import type { User, RideRequest } from "./types";
+import type { RideRequest } from "./types";
 
 interface Store {
-  users: (User & { passwordHash?: string })[];
   rides: RideRequest[];
-  nextUserId: number;
   nextRideId: number;
 }
 
 const g = globalThis as { __store?: Store };
 
 if (!g.__store) {
-  g.__store = { users: [], rides: [], nextUserId: 1, nextRideId: 1 };
+  g.__store = { rides: [], nextRideId: 1 };
 }
 
 const store: Store = g.__store;
-
-export function getStore(): Store {
-  return store;
-}
-
-export function findUserByEmail(email: string): User | undefined {
-  return store.users.find((u) => u.email === email);
-}
-
-export function findUserById(id: number): User | undefined {
-  return store.users.find((u) => u.id === id);
-}
-
-export function findUserByJavaUserId(javaUserId: number): User | undefined {
-  return store.users.find((u) => u.javaUserId === javaUserId);
-}
-
-export function createUser(email: string, name: string, role: "passenger" | "driver", javaUserId: number): User {
-  const user: User = {
-    id: store.nextUserId++,
-    email,
-    name,
-    role,
-    javaUserId,
-    createdAt: new Date().toISOString(),
-  };
-  store.users.push(user);
-  return user;
-}
 
 export function createRide(
   userId: number,

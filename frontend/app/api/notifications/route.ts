@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyToken } from "@/lib/jwt";
-import { findUserById } from "@/lib/db";
+import { getUserAuthById } from "@/lib/user-service";
 
 const NOTIFICATION_SERVICE = process.env.NEXT_PUBLIC_NOTIFICATION_SERVICE_URL || "http://localhost:8083";
 
@@ -22,8 +22,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const user = findUserById(userId);
-  if (!user) {
+  let user;
+  try {
+    user = await getUserAuthById(userId);
+  } catch {
     return NextResponse.json({ error: "User not found" }, { status: 404 });
   }
 

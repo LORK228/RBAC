@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyToken } from "@/lib/jwt";
-import { findRideById, updateRide, findUserById } from "@/lib/db";
+import { findRideById, updateRide } from "@/lib/db";
+import { getUserAuthById } from "@/lib/user-service";
 
 const TRIP_SERVICE = process.env.NEXT_PUBLIC_TRIP_SERVICE_URL || "http://localhost:8082";
 const USER_SERVICE = process.env.NEXT_PUBLIC_USER_SERVICE_URL || "http://localhost:8081";
-const JWT_SECRET = process.env.JWT_SECRET || "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
 
 function getUserIdAndRole(request: NextRequest): { userId: number; role: string } | null {
   const authHeader = request.headers.get("authorization");
@@ -44,8 +44,12 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         return NextResponse.json({ error: "Ride is no longer available" }, { status: 409 });
       }
 
-      const driver = findUserById(auth.userId);
-      if (!driver) return NextResponse.json({ error: "Driver not found" }, { status: 404 });
+      let driver;
+      try {
+        driver = await getUserAuthById(auth.userId);
+      } catch {
+        return NextResponse.json({ error: "Driver not found" }, { status: 404 });
+      }
 
       await fetch(`${USER_SERVICE}/drivers/${driver.javaUserId}/status`, {
         method: "PATCH",

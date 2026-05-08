@@ -32,3 +32,15 @@ record TokenRequest(@NotBlank String subject, @NotBlank String role) {
 
 record TokenResponse(String token) {
 }
+
+record UserAuth(long id, String email, String passwordHash, String name, String role, long javaUserId, OffsetDateTime createdAt) {
+}
+
+record CreateUserAuthRequest(@NotBlank String email, @NotBlank String passwordHash, @NotBlank String name, @NotBlank String role, long javaUserId) {
+}
+
+record LoginRequest(@NotBlank String email, @NotBlank String passwordHash) {
+}
+
+record UserAuthResponse(long id, String email, String name, String role, long javaUserId) {
+}

@@ -93,6 +93,45 @@ class UserRepository {
         return drivers.stream().findFirst();
     }
 
+    UserAuth createUserAuth(CreateUserAuthRequest request) {
+        return jdbc.queryForObject("""
+                INSERT INTO users(email, password_hash, name, role, java_user_id)
+                VALUES (?, ?, ?, ?, ?)
+                RETURNING id, email, password_hash, name, role, java_user_id, created_at
+                """, userAuthMapper, request.email(), request.passwordHash(), request.name(), request.role(), request.javaUserId());
+    }
+
+    Optional<UserAuth> findUserAuthById(long id) {
+        try {
+            return Optional.ofNullable(jdbc.queryForObject("""
+                    SELECT id, email, password_hash, name, role, java_user_id, created_at
+                    FROM users WHERE id = ?
+                    """, userAuthMapper, id));
+        } catch (EmptyResultDataAccessException ex) {
+            return Optional.empty();
+        }
+    }
+
+    Optional<UserAuth> findUserAuthByEmail(String email) {
+        try {
+            return Optional.ofNullable(jdbc.queryForObject("""
+                    SELECT id, email, password_hash, name, role, java_user_id, created_at
+                    FROM users WHERE email = ?
+                    """, userAuthMapper, email));
+        } catch (EmptyResultDataAccessException ex) {
+            return Optional.empty();
+        }
+    }
+
+    private final RowMapper<UserAuth> userAuthMapper = (rs, rowNum) -> new UserAuth(
+            rs.getLong("id"),
+            rs.getString("email"),
+            rs.getString("password_hash"),
+            rs.getString("name"),
+            rs.getString("role"),
+            rs.getLong("java_user_id"),
+            rs.getObject("created_at", java.time.OffsetDateTime.class));
+
     private Passenger mapPassenger(ResultSet rs, int rowNum) throws SQLException {
         return new Passenger(
                 rs.getLong("id"),
