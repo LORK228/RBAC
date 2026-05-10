@@ -57,7 +57,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
           "Content-Type": "application/json",
           Authorization: `Bearer ${request.headers.get("authorization")?.slice(7)}`,
         },
-        body: JSON.stringify({ status: "AVAILABLE" }),
+        body: JSON.stringify({ status: "BUSY" }),
       });
 
       const tripPayload = {
