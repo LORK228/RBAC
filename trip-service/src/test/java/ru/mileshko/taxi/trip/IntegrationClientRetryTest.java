@@ -64,9 +64,7 @@ class IntegrationClientRetryTest {
 
     @BeforeEach
     void setUp() {
-        // Сначала привязываем мок к билдеру
         server = MockRestServiceServer.bindTo(restClientBuilder).build();
-        // Затем достаём бин — Spring создаёт его сейчас, используя уже перехваченный билдер
         integrationClient = applicationContext.getBean(IntegrationClient.class);
     }
 

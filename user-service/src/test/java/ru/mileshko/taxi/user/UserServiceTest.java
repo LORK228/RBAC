@@ -42,7 +42,6 @@ class UserServiceTest {
         service = new UserService(repository, redis);
     }
 
-    /** Только для тестов, где вызывается Redis; иначе Mockito strict — «unnecessary stubbing». */
     private void givenRedisSetOps() {
         when(redis.opsForSet()).thenReturn(setOps);
     }

@@ -7,10 +7,6 @@ import org.springframework.web.client.RestClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/**
- * Симулирует недоступность удалённых сервисов на сетевом уровне (нет маршрута / отказ соединения),
- * без поднятого HTTP-сервера на целевом порту.
- */
 class IntegrationClientNetworkTest {
 
     private static final String SECRET = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";

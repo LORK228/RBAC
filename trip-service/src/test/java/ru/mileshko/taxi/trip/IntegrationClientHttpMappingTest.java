@@ -12,9 +12,6 @@ import static org.springframework.test.web.client.match.MockRestRequestMatchers.
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withStatus;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
-/**
- * Ответы HTTP от User / Notification сервисов (404, 409) и недоступность по 503 без Spring Retry.
- */
 class IntegrationClientHttpMappingTest {
 
     private static final String SECRET = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";

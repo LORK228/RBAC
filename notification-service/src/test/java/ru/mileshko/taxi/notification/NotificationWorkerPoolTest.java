@@ -17,7 +17,7 @@ class NotificationWorkerPoolTest {
     @Test
     void workerClaimsAndSendsPendingTask() throws Exception {
         NotificationTask task = task(1, 1);
-        when(repository.claimNext()).thenReturn(Optional.of(task), Optional.empty());
+        when(repository.claimNext()).thenReturn(Optional.of(task));
         NotificationWorkerPool pool = new NotificationWorkerPool(repository, 1, 50);
 
         pool.start();
@@ -28,7 +28,7 @@ class NotificationWorkerPoolTest {
     @Test
     void workerReturnsTaskToRetryWhenSendingFails() throws Exception {
         NotificationTask task = task(2, 1);
-        when(repository.claimNext()).thenReturn(Optional.of(task), Optional.empty());
+        when(repository.claimNext()).thenReturn(Optional.of(task));
         doThrow(new RuntimeException("network write failed")).when(repository).markSent(2L);
         NotificationWorkerPool pool = new NotificationWorkerPool(repository, 1, 50);
 
