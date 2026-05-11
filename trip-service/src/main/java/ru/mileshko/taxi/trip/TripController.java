@@ -46,6 +46,11 @@ class TripController {
         return service.rate(id, request.rating());
     }
 
+    @PatchMapping("/trips/{id}/assign")
+    Trip assign(@PathVariable long id, @Valid @RequestBody AssignDriverRequest request) {
+        return service.assignDriver(id, request.driverId());
+    }
+
     @GetMapping("/trips/statistics")
     TripStatistics statistics(@RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
         return service.statistics(date);

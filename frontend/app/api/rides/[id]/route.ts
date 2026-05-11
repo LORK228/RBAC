@@ -43,6 +43,9 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       if (ride.status !== "pending") {
         return NextResponse.json({ error: "Ride is no longer available" }, { status: 409 });
       }
+      if (!ride.tripId) {
+        return NextResponse.json({ error: "No trip associated with this ride" }, { status: 400 });
+      }
 
       let driver;
       try {
@@ -60,25 +63,18 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         body: JSON.stringify({ status: "BUSY" }),
       });
 
-      const tripPayload = {
-        passengerId: ride.passengerId,
-        origin: ride.origin,
-        destination: ride.destination,
-        distanceKm: ride.distanceKm ?? 5.0,
-      };
-
-      const tripRes = await fetch(`${TRIP_SERVICE}/trips`, {
-        method: "POST",
+      const tripRes = await fetch(`${TRIP_SERVICE}/trips/${ride.tripId}/assign`, {
+        method: "PATCH",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${request.headers.get("authorization")?.slice(7)}`,
         },
-        body: JSON.stringify(tripPayload),
+        body: JSON.stringify({ driverId: driver.javaUserId }),
       });
 
       if (!tripRes.ok) {
         const text = await tripRes.text();
-        return NextResponse.json({ error: `Trip creation failed: ${text}` }, { status: 502 });
+        return NextResponse.json({ error: `Driver assignment failed: ${text}` }, { status: 502 });
       }
 
       const trip = await tripRes.json();

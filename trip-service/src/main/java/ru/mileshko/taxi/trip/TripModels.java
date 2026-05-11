@@ -27,6 +27,9 @@ record CreateTripRequest(@NotNull Long passengerId, @NotBlank String origin, @No
 record UpdateTripStatusRequest(@Pattern(regexp = "ACCEPTED|STARTED|COMPLETED|CANCELLED") String status) {
 }
 
+record AssignDriverRequest(@NotNull Long driverId) {
+}
+
 record RateTripRequest(@Min(1) @Max(5) int rating) {
 }
 

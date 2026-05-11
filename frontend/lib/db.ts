@@ -19,7 +19,9 @@ export function createRide(
   passengerName: string,
   origin: string,
   destination: string,
-  distanceKm: number | null = null
+  distanceKm: number | null = null,
+  tripId?: number,
+  price?: number | null
 ): RideRequest {
   const ride: RideRequest = {
     id: store.nextRideId++,
@@ -32,8 +34,8 @@ export function createRide(
     status: "pending",
     driverId: null,
     driverName: null,
-    tripId: null,
-    price: null,
+    tripId: tripId ?? null,
+    price: price ?? null,
     rating: null,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),

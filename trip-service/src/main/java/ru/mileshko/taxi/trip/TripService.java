@@ -29,17 +29,28 @@ class TripService {
 
     Trip create(CreateTripRequest request) {
         PassengerDto passenger = integrationClient.getPassenger(request.passengerId());
-        DriverDto driver = integrationClient.allocateDriver();
         BigDecimal distance = request.distanceKm() != null
                 ? request.distanceKm()
                 : estimateDistance(request.origin(), request.destination());
         BigDecimal price = distance.multiply(tariffPerKm).setScale(2, RoundingMode.HALF_UP);
 
-        Trip trip = repository.create(passenger.id(), driver.id(), request.origin(), request.destination(), distance, price);
+        Trip trip = repository.create(passenger.id(), request.origin(), request.destination(), distance, price);
         webSocketHandler.broadcastStatusChange(trip.id(), trip.status());
-        notifyPassenger(trip, "Trip " + trip.id() + " created. Driver " + driver.name() + " assigned.");
-        notifyDriver(trip, "Trip " + trip.id() + " assigned from " + trip.origin() + " to " + trip.destination() + ".");
+        notifyPassenger(trip, "Trip " + trip.id() + " created. Waiting for a driver.");
         return trip;
+    }
+
+    Trip assignDriver(long id, long driverId) {
+        Trip before = get(id);
+        if (before.status() != TripStatus.CREATED) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Trip is not in CREATED status");
+        }
+        Trip updated = repository.assignDriver(id, driverId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Trip not found"));
+        webSocketHandler.broadcastStatusChange(id, TripStatus.DRIVER_ASSIGNED);
+        notifyPassenger(updated, "Trip " + id + ". Driver assigned.");
+        notifyDriver(updated, "Trip " + id + " assigned from " + updated.origin() + " to " + updated.destination() + ".");
+        return updated;
     }
 
     Trip get(long id) {

@@ -28,24 +28,22 @@ class TripServiceTest {
     private final TripService service = new TripService(repository, integrationClient, webSocketHandler, BigDecimal.valueOf(40));
 
     @Test
-    void createsTripAssignsDriverCalculatesPriceAndQueuesNotifications() {
+    void createsTripWithCreatedStatusAndQueuesPassengerNotification() {
         when(integrationClient.getPassenger(10L))
                 .thenReturn(new PassengerDto(10, "Alice", "alice@example.com", "+70000000001"));
-        when(integrationClient.allocateDriver())
-                .thenReturn(new DriverDto(20, "Bob", "bob@example.com", "+70000000002", "A123BC", "BUSY"));
-        Trip saved = trip(1, 10, 20, TripStatus.DRIVER_ASSIGNED, BigDecimal.valueOf(500), null);
-        when(repository.create(eq(10L), eq(20L), eq("A"), eq("B"), eq(BigDecimal.valueOf(12.5)), eq(BigDecimal.valueOf(500.00).setScale(2))))
+        Trip saved = trip(1, 10, null, TripStatus.CREATED, BigDecimal.valueOf(500), null);
+        when(repository.create(eq(10L), eq("A"), eq("B"), eq(BigDecimal.valueOf(12.5)), eq(BigDecimal.valueOf(500.00).setScale(2))))
                 .thenReturn(saved);
 
         Trip result = service.create(new CreateTripRequest(10L, "A", "B", BigDecimal.valueOf(12.5)));
 
         assertThat(result.id()).isEqualTo(1);
+        assertThat(result.status()).isEqualTo(TripStatus.CREATED);
+        assertThat(result.driverId()).isNull();
         assertThat(result.price()).isEqualByComparingTo("500");
         ArgumentCaptor<NotificationRequest> notifications = ArgumentCaptor.forClass(NotificationRequest.class);
-        verify(integrationClient, times(2)).createNotification(notifications.capture());
-        assertThat(notifications.getAllValues())
-                .extracting(NotificationRequest::recipientType)
-                .containsExactly("PASSENGER", "DRIVER");
+        verify(integrationClient).createNotification(notifications.capture());
+        assertThat(notifications.getValue().recipientType()).isEqualTo("PASSENGER");
     }
 
     @Test
@@ -60,22 +58,34 @@ class TripServiceTest {
     }
 
     @Test
-    void failsWithConflictWhenNoDriversAreAvailable() {
-        when(integrationClient.getPassenger(10L))
-                .thenReturn(new PassengerDto(10, "Alice", "alice@example.com", "+70000000001"));
-        when(integrationClient.allocateDriver())
-                .thenThrow(new ResponseStatusException(org.springframework.http.HttpStatus.CONFLICT, "No available drivers"));
+    void assignsDriverToCreatedTrip() {
+        Trip created = trip(1, 10, null, TripStatus.CREATED, BigDecimal.valueOf(500), null);
+        Trip assigned = trip(1, 10, 20L, TripStatus.DRIVER_ASSIGNED, BigDecimal.valueOf(500), null);
+        when(repository.find(1L)).thenReturn(Optional.of(created));
+        when(repository.assignDriver(1L, 20L)).thenReturn(Optional.of(assigned));
 
-        assertThatThrownBy(() -> service.create(new CreateTripRequest(10L, "A", "B", BigDecimal.TEN)))
+        Trip result = service.assignDriver(1L, 20L);
+
+        assertThat(result.status()).isEqualTo(TripStatus.DRIVER_ASSIGNED);
+        assertThat(result.driverId()).isEqualTo(20L);
+        verify(integrationClient, times(2)).createNotification(any(NotificationRequest.class));
+    }
+
+    @Test
+    void failsAssigningDriverToNonCreatedTrip() {
+        Trip started = trip(1, 10, 20L, TripStatus.STARTED, BigDecimal.valueOf(500), null);
+        when(repository.find(1L)).thenReturn(Optional.of(started));
+
+        assertThatThrownBy(() -> service.assignDriver(1L, 20L))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("409 CONFLICT");
-        verifyNoInteractions(repository);
+        verifyNoInteractions(integrationClient);
     }
 
     @Test
     void completingTripReleasesDriverAndQueuesStatusNotifications() {
-        Trip existing = trip(1, 10, 20, TripStatus.STARTED, BigDecimal.valueOf(500), null);
-        Trip completed = trip(1, 10, 20, TripStatus.COMPLETED, BigDecimal.valueOf(500), null);
+        Trip existing = trip(1, 10, 20L, TripStatus.STARTED, BigDecimal.valueOf(500), null);
+        Trip completed = trip(1, 10, 20L, TripStatus.COMPLETED, BigDecimal.valueOf(500), null);
         when(repository.find(1L)).thenReturn(Optional.of(existing));
         when(repository.updateStatus(1L, TripStatus.COMPLETED)).thenReturn(Optional.of(completed));
 
@@ -88,13 +98,13 @@ class TripServiceTest {
 
     @Test
     void ratesOnlyCompletedTrips() {
-        Trip rated = trip(1, 10, 20, TripStatus.COMPLETED, BigDecimal.valueOf(500), 5);
+        Trip rated = trip(1, 10, 20L, TripStatus.COMPLETED, BigDecimal.valueOf(500), 5);
         when(repository.rate(1L, 5)).thenReturn(Optional.of(rated));
 
         assertThat(service.rate(1L, 5).rating()).isEqualTo(5);
     }
 
-    private Trip trip(long id, long passengerId, long driverId, TripStatus status, BigDecimal price, Integer rating) {
+    private Trip trip(long id, long passengerId, Long driverId, TripStatus status, BigDecimal price, Integer rating) {
         OffsetDateTime now = OffsetDateTime.now();
         return new Trip(id, passengerId, driverId, status, "A", "B", BigDecimal.valueOf(12.5), price, rating, now, now);
     }

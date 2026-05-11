@@ -21,13 +21,13 @@ class TripRepository {
         this.jdbc = jdbc;
     }
 
-    Trip create(long passengerId, long driverId, String origin, String destination,
+    Trip create(long passengerId, String origin, String destination,
                 BigDecimal distanceKm, BigDecimal price) {
         return jdbc.queryForObject("""
                 INSERT INTO trips(passenger_id, driver_id, status, origin, destination, distance_km, price)
-                VALUES (?, ?, 'DRIVER_ASSIGNED', ?, ?, ?, ?)
+                VALUES (?, NULL, 'CREATED', ?, ?, ?, ?)
                 RETURNING id, passenger_id, driver_id, status, origin, destination, distance_km, price, rating, created_at, updated_at
-                """, mapper, passengerId, driverId, origin, destination, distanceKm, price);
+                """, mapper, passengerId, origin, destination, distanceKm, price);
     }
 
     Optional<Trip> find(long id) {
@@ -47,6 +47,16 @@ class TripRepository {
                 FROM trips WHERE passenger_id = ?
                 ORDER BY created_at DESC
                 """, mapper, passengerId);
+    }
+
+    Optional<Trip> assignDriver(long id, long driverId) {
+        List<Trip> trips = jdbc.query("""
+                UPDATE trips
+                SET driver_id = ?, status = 'DRIVER_ASSIGNED', updated_at = now()
+                WHERE id = ? AND status = 'CREATED'
+                RETURNING id, passenger_id, driver_id, status, origin, destination, distance_km, price, rating, created_at, updated_at
+                """, mapper, driverId, id);
+        return trips.stream().findFirst();
     }
 
     Optional<Trip> updateStatus(long id, TripStatus status) {

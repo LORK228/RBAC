@@ -50,7 +50,7 @@ class TripControllerTest {
 
     @Test
     void createTrip_returnsBody() throws Exception {
-        Trip trip = new Trip(1, 10, 20L, TripStatus.DRIVER_ASSIGNED, "A", "B",
+        Trip trip = new Trip(1, 10, null, TripStatus.CREATED, "A", "B",
                 BigDecimal.TEN, BigDecimal.valueOf(400), null, OffsetDateTime.now(), OffsetDateTime.now());
         when(tripService.create(any(CreateTripRequest.class))).thenReturn(trip);
 
@@ -59,7 +59,21 @@ class TripControllerTest {
                         .content(objectMapper.writeValueAsString(new CreateTripRequest(10L, "A", "B", BigDecimal.TEN))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1))
-                .andExpect(jsonPath("$.status").value("DRIVER_ASSIGNED"));
+                .andExpect(jsonPath("$.status").value("CREATED"));
+    }
+
+    @Test
+    void assignDriver_returnsBody() throws Exception {
+        Trip trip = new Trip(1, 10, 20L, TripStatus.DRIVER_ASSIGNED, "A", "B",
+                BigDecimal.TEN, BigDecimal.valueOf(400), null, OffsetDateTime.now(), OffsetDateTime.now());
+        when(tripService.assignDriver(eq(1L), eq(20L))).thenReturn(trip);
+
+        mockMvc.perform(patch("/trips/1/assign")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"driverId\":20}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("DRIVER_ASSIGNED"))
+                .andExpect(jsonPath("$.driverId").value(20));
     }
 
     @Test

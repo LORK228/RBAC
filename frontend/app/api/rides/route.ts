@@ -3,6 +3,8 @@ import { verifyToken } from "@/lib/jwt";
 import { createRide, findRidesByUserId, findPendingRides, findRidesByDriverId } from "@/lib/db";
 import { getUserAuthById } from "@/lib/user-service";
 
+const TRIP_SERVICE = process.env.NEXT_PUBLIC_TRIP_SERVICE_URL || "http://localhost:8082";
+
 function getUserId(request: NextRequest): number | null {
   const authHeader = request.headers.get("authorization");
   if (!authHeader?.startsWith("Bearer ")) return null;
@@ -35,7 +37,29 @@ export async function POST(request: NextRequest) {
     }
 
     const distance = distanceKm != null ? parseFloat(distanceKm) : null;
-    const ride = createRide(user.id, user.javaUserId, user.name, origin.trim(), destination.trim(), distance);
+
+    const token = request.headers.get("authorization")?.slice(7);
+    const tripRes = await fetch(`${TRIP_SERVICE}/trips`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        passengerId: user.javaUserId,
+        origin: origin.trim(),
+        destination: destination.trim(),
+        distanceKm: distance,
+      }),
+    });
+
+    if (!tripRes.ok) {
+      const text = await tripRes.text();
+      return NextResponse.json({ error: `Trip creation failed: ${text}` }, { status: 502 });
+    }
+
+    const trip = await tripRes.json();
+    const ride = createRide(user.id, user.javaUserId, user.name, origin.trim(), destination.trim(), distance, trip.id, trip.price != null ? Number(trip.price) : null);
 
     return NextResponse.json({ ride }, { status: 201 });
   } catch {
